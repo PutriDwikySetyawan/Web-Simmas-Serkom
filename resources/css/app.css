@@ -1,0 +1,181 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* ===================================================
+   1. DESIGN TOKENS — variabel warna & font global
+   =================================================== */
+:root {
+    --simmas-ink: #14161A;
+    --simmas-blue: #3A5CE0;
+    --simmas-blue-dark: #2547C7;
+    --simmas-blue-deep: #16205C;   /* pengganti navy — masih satu keluarga hue biru */
+    --simmas-blue-light: #EEF1FF;
+    --simmas-paper: #F7F8FB;
+    --simmas-muted: #6B7280;
+    --simmas-green: #16A34A;
+    --simmas-green-light: #E8F8EE;
+    --simmas-amber: #B45309;
+    --simmas-amber-light: #FEF3E2;
+    --simmas-border: #E7E9F0;
+    --font-display: 'Plus Jakarta Sans', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+/* ===================================================
+   2. BASE — reset dasar body & tipografi global
+   =================================================== */
+body {
+    font-family: var(--font-body);
+    color: var(--simmas-ink);
+    background: var(--simmas-paper);
+}
+h1, h2, h3, h4, .simmas-brand-text {
+    font-family: var(--font-display);
+}
+
+/* ===================================================
+   3. LOGO MARK — badge bulat biru + ikon topi wisuda
+   (representasi sekolah), dipakai navbar & footer
+   =================================================== */
+.simmas-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--simmas-blue);
+    color: #fff;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+.simmas-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none !important;
+}
+.simmas-brand-text {
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    color: var(--simmas-ink);
+}
+
+/* ===================================================
+   4. NAVBAR — mengambang (floating pill), tidak mentok
+   ke tepi kiri-kanan layar, ada jarak dari atas
+   =================================================== */
+/* Pembungkus luar navbar — kasih jarak dari tepi atas & samping layar */
+.simmas-navbar-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    padding: 18px 20px 0;
+    background: transparent;
+}
+/* Navbar itu sendiri — bentuk pill, mengambang, tidak full width */
+.simmas-navbar {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 999px;
+    border: 1px solid var(--simmas-border);
+    box-shadow: 0 10px 30px -12px rgba(20, 22, 26, 0.15);
+    padding: 8px 10px 8px 22px;
+}
+
+/* Tautan menu tengah (Fitur, Panduan) — dibuat seperti chip kecil */
+.simmas-nav-links .nav-link {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--simmas-ink);
+    padding: 7px 14px !important;
+    border-radius: 999px;
+    transition: background .15s ease, color .15s ease;
+}
+.simmas-nav-links .nav-link:hover {
+    background: var(--simmas-blue-light);
+    color: var(--simmas-blue);
+}
+
+/* Tombol "Masuk" — outline pill kecil */
+.simmas-btn-ghost {
+    color: var(--simmas-ink);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--simmas-border);
+    background: #fff;
+}
+.simmas-btn-ghost:hover { background: var(--simmas-blue-light); color: var(--simmas-blue); }
+
+/* Tombol "Mulai Sekarang" — solid biru pill, ukuran kecil khusus navbar */
+.simmas-btn-primary-sm {
+    background: var(--simmas-blue);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 8px 18px;
+    border-radius: 999px;
+    transition: background .15s ease, transform .15s ease;
+}
+.simmas-btn-primary-sm:hover {
+    background: var(--simmas-blue-dark);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* Tombol "Mulai Sekarang" versi besar — dipakai di hero, BUKAN di navbar */
+.simmas-btn-primary {
+    background: var(--simmas-blue);
+    color: #fff;
+    font-weight: 600;
+    padding: 11px 26px;
+    border-radius: 999px;
+    transition: background .15s ease, transform .15s ease;
+}
+.simmas-btn-primary:hover {
+    background: var(--simmas-blue-dark);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* ===================================================
+   5. FOOTER — biru gelap senada (bukan navy abu-abu)
+   =================================================== */
+.simmas-footer {
+    background: var(--simmas-blue-deep);
+    color: rgba(255, 255, 255, 0.65);
+    padding: 56px 0 24px;
+}
+.simmas-footer-brand .simmas-brand-text { color: #fff; }
+.simmas-footer-brand .simmas-mark { background: #fff; color: var(--simmas-blue-deep); }
+.simmas-footer-desc {
+    font-size: 0.9rem;
+    margin-top: 14px;
+    max-width: 320px;
+    color: rgba(255, 255, 255, 0.55);
+}
+.simmas-footer-title {
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+}
+.simmas-footer-links { list-style: none; padding: 0; margin: 0; }
+.simmas-footer-links li { margin-bottom: 10px; font-size: 0.9rem; }
+.simmas-footer-links a, .simmas-footer-links li {
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+}
+.simmas-footer-links a:hover { color: #fff; }
+.simmas-footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 40px;
+    padding-top: 24px;
+    font-size: 0.85rem;
+    text-align: center;
+}
