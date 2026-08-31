@@ -5,15 +5,6 @@
 
 @push('styles')
 <style>
-    /* Selaraskan lebar halaman dengan Monitoring Global. */
-    .admin-main .admin-content {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-    }
-
     /* =========================================================
        STAT CARD RINGKAS
     ========================================================= */
@@ -598,6 +589,8 @@
 
 @section('content')
 
+<div class="container-fluid py-4">
+
 {{-- =====================================================
      1. STAT CARD RINGKAS
      Dihitung langsung dari model karena controller saat ini
@@ -792,6 +785,8 @@
         </div>
 
     @endif
+
+</div>
 
 </div>
 

@@ -28,6 +28,119 @@
             --app-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+
+        /* â”€â”€ GLOBAL SEARCH siswa â”€â”€ */
+        .app-search {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--guru-bg);
+            border: 1.5px solid var(--guru-border);
+            border-radius: 999px;
+            padding: 0 14px;
+            height: 36px;
+            min-width: 200px;
+            transition: border-color .15s ease, box-shadow .15s ease;
+            cursor: text;
+        }
+        .app-search:focus-within {
+            border-color: var(--guru-primary);
+            box-shadow: 0 0 0 3px rgba(59, 91, 251, .12);
+        }
+        .app-search > .bi-search {
+            font-size: .82rem;
+            color: var(--guru-muted);
+            flex-shrink: 0;
+        }
+        .app-search input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: inherit;
+            font-size: .82rem;
+            color: var(--guru-ink);
+            width: 100%;
+        }
+        .app-search input::placeholder { color: var(--guru-muted); }
+
+        .siswa-search-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            min-width: 320px;
+            background: #fff;
+            border: 1px solid var(--guru-border);
+            border-radius: 14px;
+            box-shadow: 0 16px 40px -8px rgba(16, 24, 40, .18);
+            z-index: 1060;
+            overflow: hidden;
+            animation: siswaSearchDropIn 140ms ease;
+        }
+        @keyframes siswaSearchDropIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .siswa-search-spinner,
+        .siswa-search-empty {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            font-size: .83rem;
+            color: var(--guru-muted);
+        }
+        .siswa-search-results {
+            list-style: none;
+            margin: 0;
+            padding: 6px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .siswa-search-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 10px;
+            border-radius: 9px;
+            text-decoration: none;
+            color: var(--guru-ink);
+            transition: background .12s ease;
+        }
+        .siswa-search-item:hover { background: var(--guru-bg); color: var(--guru-ink); }
+        .siswa-search-item__icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--guru-primary-soft);
+            color: var(--guru-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .9rem;
+            flex-shrink: 0;
+        }
+        .siswa-search-item__text {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            overflow: hidden;
+        }
+        .siswa-search-item__label {
+            font-size: .84rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .siswa-search-item__sub {
+            font-size: .74rem;
+            color: var(--guru-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         @media (prefers-reduced-motion: reduce) {
             * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
         }
@@ -484,10 +597,96 @@
                 </div>
 
                 <div class="app-topbar-right">
-                    <label class="app-search">
+                    <div class="app-search" id="siswaGlobalSearch">
                         <i class="bi bi-search"></i>
-                        <input type="text" placeholder="Cari...">
-                    </label>
+                        <input
+                            type="text"
+                            id="siswaSearchInput"
+                            placeholder="Cari DUDI, jurnal..."
+                            autocomplete="off"
+                            aria-label="Pencarian"
+                        >
+                        <div class="siswa-search-dropdown" id="siswaSearchDropdown" hidden>
+                            <div class="siswa-search-spinner" id="siswaSearchSpinner">
+                                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                <span>Mencari...</span>
+                            </div>
+                            <ul class="siswa-search-results" id="siswaSearchResults"></ul>
+                            <div class="siswa-search-empty" id="siswaSearchEmpty" hidden>
+                                <i class="bi bi-search"></i>
+                                <span>Tidak ada hasil untuk "<strong id="siswaSearchEmptyQ"></strong>"</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="app-icon-btn" title="Notifikasi" aria-label="Notifikasi">
+                        <i class="bi bi-bell"></i>
+                        <span class="dot"></span>
+                    </button>
+
+                    <a href="{{ url('siswa/dashboard') }}" class="app-icon-btn" title="Beranda" aria-label="Beranda">
+                        <i class="bi bi-house"></i>
+                    </a>
+
+                    <div class="dropdown">
+                        <button class="app-user-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="app-user-avatar">
+                                {{ strtoupper(substr(Auth::user()->nama ?? Auth::user()->name ?? 'S', 0, 1)) }}
+                            </span>
+                            <span class="app-user-name">{{ Auth::user()->nama ?? Auth::user()->name ?? 'Siswa' }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url('siswa/profil') }}"><i class="bi bi-person-gear me-2"></i>Pengaturan Akun</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form method="POST" action="{{ url('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Keluar
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <main class="app-content">
+                @yield('content')
+            </main>
+        </div>
+    </div>
+
+    <div class="app-toast-container" id="appToastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============================================================
+        // Sidebar toggle (mobile)
+        // ============================================================
+        (function () {
+            const sidebar  = document.getElementById('appSidebar');
+            const overlay  = document.getElementById('appSidebarOverlay');
+            const toggleBtn = document.getElementById('appSidebarToggle');
+
+            function openSidebar() {
+                sidebar.classList.add('show');
+                overlay.classList.add('show');
+            }
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+            }
+
+            toggleBtn && toggleBtn.addEventListener('click', function () {
+                sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+            });
+            overlay && overlay.addEventListener('click', closeSidebar);
+
+            window.addEventListener('resize', function () {
+                if (window.innerWidth >= 992) closeSidebar();
+            });
+                    </div>
 
                     <button type="button" class="app-icon-btn" title="Notifikasi" aria-label="Notifikasi">
                         <i class="bi bi-bell"></i>
@@ -579,6 +778,78 @@
                 setTimeout(() => el.remove(), 220);
             }, 3200);
         };
+
+        // ============================================================
+        // Global Search — siswa topbar
+        // ============================================================
+        (function () {
+            const searchInput    = document.getElementById('siswaSearchInput');
+            const searchDropdown = document.getElementById('siswaSearchDropdown');
+            const searchSpinner  = document.getElementById('siswaSearchSpinner');
+            const searchResults  = document.getElementById('siswaSearchResults');
+            const searchEmpty    = document.getElementById('siswaSearchEmpty');
+            const searchEmptyQ   = document.getElementById('siswaSearchEmptyQ');
+
+            if (!searchInput) return;
+
+            let timer = null;
+
+            searchInput.addEventListener('input', () => {
+                clearTimeout(timer);
+                const q = searchInput.value.trim();
+                if (q.length < 2) { searchDropdown.hidden = true; return; }
+
+                searchDropdown.hidden = false;
+                searchSpinner.hidden = false;
+                searchResults.innerHTML = '';
+                searchEmpty.hidden = true;
+
+                timer = setTimeout(() => doSearch(q), 320);
+            });
+
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { searchDropdown.hidden = true; searchInput.blur(); }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!document.getElementById('siswaGlobalSearch')?.contains(e.target)) {
+                    searchDropdown.hidden = true;
+                }
+            });
+
+            async function doSearch(q) {
+                try {
+                    const res = await fetch(`{{ route('siswa.search') }}?q=${encodeURIComponent(q)}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const data = await res.json();
+                    searchSpinner.hidden = true;
+
+                    if (!data.results || data.results.length === 0) {
+                        searchEmpty.hidden = false;
+                        searchEmptyQ.textContent = q;
+                        searchResults.innerHTML = '';
+                        return;
+                    }
+
+                    searchEmpty.hidden = true;
+                    searchResults.innerHTML = data.results.map(item => `
+                        <li>
+                            <a href="${item.url}" class="siswa-search-item">
+                                <span class="siswa-search-item__icon"><i class="bi ${item.icon}"></i></span>
+                                <span class="siswa-search-item__text">
+                                    <span class="siswa-search-item__label">${item.label}</span>
+                                    <span class="siswa-search-item__sub">${item.sublabel}</span>
+                                </span>
+                            </a>
+                        </li>
+                    `).join('');
+                } catch (err) {
+                    searchSpinner.hidden = true;
+                    searchResults.innerHTML = '<li class="px-3 py-2 text-danger small">Gagal memuat hasil.</li>';
+                }
+            }
+        })();
     </script>
 
     @yield('scripts')

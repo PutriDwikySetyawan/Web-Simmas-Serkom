@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -312,21 +312,8 @@
             font-weight: 500;
             color: var(--simmas-muted);
         }
-
-        .admin-topbar__user .bi-chevron-down {
-            font-size: 0.7rem;
-            color: var(--simmas-muted);
-            transition: transform 0.15s ease;
-        }
-
-        .admin-topbar__user[aria-expanded="true"] .bi-chevron-down {
-            transform: rotate(180deg);
-        }
-
         /* ---------------------------------------------------
            DROPDOWN (dipakai untuk menu user di topbar)
-           Bootstrap-icons yang di-load cuma ikon fontnya saja,
-           bukan CSS komponen Bootstrap — jadi style dropdown
            di-handle manual di sini. Class .dropdown-menu / .show
            tetap dipakai supaya kompatibel dengan bootstrap.bundle.js
            (yang menangani toggle buka/tutupnya).
@@ -665,7 +652,6 @@
         </aside>
         <div class="admin-sidebar-overlay" id="adminSidebarOverlay"></div>
 
-
         {{-- =====================================================
              KONTEN UTAMA
         ====================================================== --}}
@@ -686,9 +672,27 @@
 
                 <div class="admin-topbar__actions">
 
-                    <div class="admin-topbar__search">
+                    {{-- GLOBAL SEARCH --}}
+                    <div class="admin-topbar__search" id="adminGlobalSearch">
                         <i class="bi bi-search"></i>
-                        <input type="text" placeholder="Cari...">
+                        <input
+                            type="text"
+                            id="adminSearchInput"
+                            placeholder="Cari siswa, guru, DUDI..."
+                            autocomplete="off"
+                            aria-label="Pencarian global"
+                        >
+                        <div class="admin-search-dropdown" id="adminSearchDropdown" hidden>
+                            <div class="admin-search-spinner" id="adminSearchSpinner">
+                                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                <span>Mencari...</span>
+                            </div>
+                            <ul class="admin-search-results" id="adminSearchResults"></ul>
+                            <div class="admin-search-empty" id="adminSearchEmpty" hidden>
+                                <i class="bi bi-search"></i>
+                                <span>Tidak ada hasil untuk "<strong id="adminSearchEmptyQ"></strong>"</span>
+                            </div>
+                        </div>
                     </div>
 
                     <span class="admin-topbar__divider"></span>
@@ -754,6 +758,80 @@
             toggle?.addEventListener('click', () => { sidebar?.classList.toggle('is-open'); overlay?.classList.toggle('is-open'); });
             overlay?.addEventListener('click', close);
             document.querySelectorAll('.admin-sidebar__link').forEach(link => link.addEventListener('click', close));
+
+            // ── GLOBAL SEARCH ─────────────────────────────────────────────
+            const searchInput    = document.getElementById('adminSearchInput');
+            const searchDropdown = document.getElementById('adminSearchDropdown');
+            const searchSpinner  = document.getElementById('adminSearchSpinner');
+            const searchResults  = document.getElementById('adminSearchResults');
+            const searchEmpty    = document.getElementById('adminSearchEmpty');
+            const searchEmptyQ   = document.getElementById('adminSearchEmptyQ');
+
+            let searchTimer = null;
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(searchTimer);
+                    const q = searchInput.value.trim();
+                    if (q.length < 2) {
+                        searchDropdown.hidden = true;
+                        return;
+                    }
+                    // Show spinner
+                    searchDropdown.hidden = false;
+                    searchSpinner.hidden = false;
+                    searchResults.innerHTML = '';
+                    searchEmpty.hidden = true;
+
+                    searchTimer = setTimeout(() => doSearch(q), 320);
+                });
+
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        searchDropdown.hidden = true;
+                        searchInput.blur();
+                    }
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!document.getElementById('adminGlobalSearch')?.contains(e.target)) {
+                        searchDropdown.hidden = true;
+                    }
+                });
+            }
+
+            async function doSearch(q) {
+                try {
+                    const res = await fetch(`{{ route('admin.search') }}?q=${encodeURIComponent(q)}`, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const data = await res.json();
+                    searchSpinner.hidden = true;
+
+                    if (!data.results || data.results.length === 0) {
+                        searchEmpty.hidden = false;
+                        searchEmptyQ.textContent = q;
+                        searchResults.innerHTML = '';
+                        return;
+                    }
+
+                    searchEmpty.hidden = true;
+                    searchResults.innerHTML = data.results.map(item => `
+                        <li>
+                            <a href="${item.url}" class="admin-search-item">
+                                <span class="admin-search-item__icon"><i class="bi ${item.icon}"></i></span>
+                                <span class="admin-search-item__text">
+                                    <span class="admin-search-item__label">${item.label}</span>
+                                    <span class="admin-search-item__sub">${item.sublabel}</span>
+                                </span>
+                            </a>
+                        </li>
+                    `).join('');
+                } catch (err) {
+                    searchSpinner.hidden = true;
+                    searchResults.innerHTML = '<li class="px-3 py-2 text-danger small">Gagal memuat hasil pencarian.</li>';
+                }
+            }
         });
     </script>
 

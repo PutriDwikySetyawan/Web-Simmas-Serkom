@@ -93,7 +93,7 @@
     .hero-simmas__btn-outline:hover { background: var(--simmas-paper); color: var(--simmas-ink); }
 
     /* ===== 2. HERO PREVIEW — kartu dashboard hidup, mengambang di atas shape biru ===== */
-    .hero-preview { position: relative; z-index: 2; padding: 24px; }
+    .hero-preview { position: relative; z-index: 2; padding: 24px 40px; }
 
     .hero-preview__window {
         background: #fff;
@@ -102,6 +102,7 @@
         overflow: hidden;
         transform: rotate(-1.5deg);
         transition: transform .3s ease;
+        margin: 0 14px;
     }
     .hero-preview:hover .hero-preview__window { transform: rotate(0deg); }
 
@@ -148,7 +149,7 @@
     }
 
     /* Konten utama dashboard mini */
-    .hero-preview__main { flex: 1; padding: 16px 18px; min-width: 0; }
+    .hero-preview__main { flex: 1; padding: 20px 24px; min-width: 0; }
     .hero-preview__main-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 12px; }
 
     /* 3 kartu statistik mini */
@@ -175,7 +176,7 @@
     /* Badge "LIVE" mengambang di pojok kanan atas kartu, di atas shape biru */
     .hero-preview__live-badge {
         position: absolute;
-        top: 4px; right: 4px;
+        top: 4px; right: 18px;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -501,13 +502,14 @@
                                         @forelse ($pengajuanTerbaru as $pengajuan)
                                             @php
                                                 $namaSiswa = $pengajuan->siswa->profile->nama ?? '-';
-                                                $badgeClass = match($pengajuan->status_pengesahan) {
-                                                    'disahkan', 'lulus_magang' => 'hero-preview__badge--success',
+                                                $statusVal = $pengajuan->status_display ?? $pengajuan->status_pengesahan ?? $pengajuan->status ?? 'menunggu';
+                                                $badgeClass = match($statusVal) {
+                                                    'disetujui', 'disahkan', 'lulus_magang' => 'hero-preview__badge--success',
                                                     'ditolak'   => 'hero-preview__badge--danger',
                                                     default     => 'hero-preview__badge--warning',
                                                 };
-                                                $statusLabel = match($pengajuan->status_pengesahan) {
-                                                    'disahkan', 'lulus_magang' => 'Diterima',
+                                                $statusLabel = match($statusVal) {
+                                                    'disetujui', 'disahkan', 'lulus_magang' => 'Diterima',
                                                     'ditolak'   => 'Ditolak',
                                                     default     => 'Menunggu',
                                                 };

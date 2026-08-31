@@ -19,9 +19,7 @@ class PenempatanController extends Controller
      */
     public function index(Request $request)
     {
-        $pengajuanQuery = PengajuanMagang::with(['siswa.profile', 'tempatMagang'])
-            ->where('status', 'menunggu');
-
+        $pengajuanQuery = PengajuanMagang::with(['siswa.profile', 'tempatMagang']);
         $penempatanQuery = PenempatanMagang::with(['siswa.profile', 'tempatMagang', 'guru.profile']);
 
         if ($request->filled('search')) {
@@ -46,21 +44,33 @@ class PenempatanController extends Controller
 
         $combined = collect();
 
-        if ($statusFilter === 'semua' || $statusFilter === 'menunggu') {
-            $pendingPengajuans = $pengajuanQuery->get()->map(function ($p) {
-                $p->status_pengesahan = 'menunggu';
+        // 1. Ambil data pengajuan dari PengajuanMagang (termasuk status 'menunggu' dan 'ditolak')
+        if ($statusFilter === 'semua' || $statusFilter === 'menunggu' || $statusFilter === 'ditolak') {
+            $statusesToFetch = [];
+            if ($statusFilter === 'semua') {
+                $statusesToFetch = ['menunggu', 'ditolak'];
+            } elseif ($statusFilter === 'menunggu') {
+                $statusesToFetch = ['menunggu'];
+            } elseif ($statusFilter === 'ditolak') {
+                $statusesToFetch = ['ditolak'];
+            }
+
+            $pengajuans = $pengajuanQuery->whereIn('status', $statusesToFetch)->get()->map(function ($p) {
+                $p->status_pengesahan = $p->status === 'disetujui' ? 'disahkan' : $p->status;
                 $p->guru = null;
                 $p->guru_id = null;
                 return $p;
             });
-            $combined = $combined->concat($pendingPengajuans);
+
+            $combined = $combined->concat($pengajuans);
         }
 
-        if ($statusFilter === 'semua' || $statusFilter !== 'menunggu') {
-            if ($statusFilter !== 'semua') {
-                $penempatanQuery->where('status_pengesahan', $statusFilter);
-            }
+        // 2. Ambil data penempatan resmi dari PenempatanMagang
+        if ($statusFilter === 'semua') {
             $penempatans = $penempatanQuery->get();
+            $combined = $combined->concat($penempatans);
+        } else {
+            $penempatans = $penempatanQuery->where('status_pengesahan', $statusFilter)->get();
             $combined = $combined->concat($penempatans);
         }
 
@@ -84,7 +94,7 @@ class PenempatanController extends Controller
         $guruList         = Guru::with('profile')->where('is_active', true)->get();
 
         // Statistik ringkas untuk 4 kartu di atas tabel
-        $totalPenempatan   = PenempatanMagang::count() + PengajuanMagang::where('status', 'menunggu')->count();
+        $totalPenempatan   = PenempatanMagang::count() + PengajuanMagang::whereIn('status', ['menunggu', 'ditolak'])->count();
         $sedangBerlangsung = PenempatanMagang::where('status_pengesahan', 'disahkan')->count();
         $lulusMagang       = PenempatanMagang::where('status_pengesahan', 'lulus_magang')->count();
         $dudiTerlibat      = PenempatanMagang::distinct('tempat_magang_id')->count('tempat_magang_id');
@@ -202,7 +212,7 @@ class PenempatanController extends Controller
 
         if (!$pengajuan) {
             $penempatan = PenempatanMagang::find($id);
-            if ($penempatan && $penempatan->status_pengesahan === 'menunggu') {
+            if ($penempatan && in_array($penempatan->status_pengesahan, ['menunggu', 'ditolak'])) {
                 $penempatan->update([
                     'guru_id' => $validated['guru_id'],
                     'status_pengesahan' => 'disahkan',
@@ -212,10 +222,6 @@ class PenempatanController extends Controller
                 return response()->json(['message' => 'Pengajuan berhasil divalidasi.']);
             }
             return response()->json(['message' => 'Data pengajuan tidak ditemukan.'], 404);
-        }
-
-        if ($pengajuan->status !== 'menunggu') {
-            return response()->json(['message' => 'Pengajuan sudah diproses sebelumnya.'], 422);
         }
 
         // 1. Ubah status di pengajuan_magang
@@ -263,7 +269,7 @@ class PenempatanController extends Controller
 
         if (!$pengajuan) {
             $penempatan = PenempatanMagang::find($id);
-            if ($penempatan && $penempatan->status_pengesahan === 'menunggu') {
+            if ($penempatan) {
                 $penempatan->update([
                     'status_pengesahan' => 'ditolak',
                     'catatan_penolakan' => $request->catatan_penolakan,
@@ -272,10 +278,6 @@ class PenempatanController extends Controller
                 return response()->json(['message' => 'Pengajuan berhasil ditolak.']);
             }
             return response()->json(['message' => 'Data pengajuan tidak ditemukan.'], 404);
-        }
-
-        if ($pengajuan->status !== 'menunggu') {
-            return response()->json(['message' => 'Pengajuan sudah diproses sebelumnya.'], 422);
         }
 
         $pengajuan->update([

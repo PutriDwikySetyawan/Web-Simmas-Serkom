@@ -18,7 +18,7 @@ class AuthController extends Controller
     {
         $jumlahSiswa = Siswa::count();
         $jumlahGuru = Guru::count();
-        $jumlahPenempatanMagang = PenempatanMagang::count();
+        $jumlahPenempatanMagang = PenempatanMagang::count() + \App\Models\PengajuanMagang::count();
 
         return view('auth.login', compact(
             'jumlahSiswa',

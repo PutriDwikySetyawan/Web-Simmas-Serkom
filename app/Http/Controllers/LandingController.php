@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-// ============================================
-// Import model — ditambah Guru untuk hitung total guru pembimbing
-// ============================================
 use App\Models\Absensi;
 use App\Models\Guru;
 use App\Models\JurnalHarian;
+use App\Models\PengajuanMagang;
 use App\Models\PenempatanMagang;
 use App\Models\Siswa;
 use App\Models\TempatMagang;
@@ -19,34 +17,41 @@ class LandingController extends Controller
      */
     public function index()
     {
-        // ============================================
-        // Semua angka diambil langsung dari database, tidak ada nilai dummy
-        // ============================================
-
         // Jumlah jurnal harian yang sudah disetujui guru pembimbing
         $jurnalDisetujui  = JurnalHarian::where('status_verifikasi', 'disetujui')->count();
 
         // Jumlah presensi yang tercatat pada bulan berjalan
         $presensiTercatat = Absensi::whereMonth('tanggal', now()->month)->count();
 
-        // Jumlah siswa yang statusnya sedang aktif magang
-        $siswaAktif       = Siswa::where('status', 'sedang_magang')->count();
+        // Jumlah siswa aktif magang / pengajuan
+        $siswaAktif       = Siswa::whereIn('status', ['sedang_magang', 'pengajuan'])->count();
 
         // Jumlah mitra DUDI yang sudah terverifikasi
         $totalMitraDudi   = TempatMagang::where('status_verifikasi', 'terverifikasi')->count();
 
-        // Jumlah guru pembimbing — dipakai di preview dashboard hero landing page
+        // Jumlah guru pembimbing
         $totalGuru        = Guru::count();
 
-        // Cuplikan permohonan magang terbaru untuk preview dashboard di hero landing page
-        $pengajuanTerbaru = PenempatanMagang::with('siswa.profile')
-            ->latest()
-            ->take(4)
-            ->get();
+        // Cuplikan permohonan magang terbaru untuk preview mockup dashboard hero landing page (realtime dari PengajuanMagang & PenempatanMagang)
+        $pengajuanList = PengajuanMagang::with('siswa.profile')->latest()->get()->map(function ($item) {
+            $item->status_display = match ($item->status) {
+                'disetujui' => 'disahkan',
+                'ditolak' => 'ditolak',
+                default => 'menunggu',
+            };
+            return $item;
+        });
 
-        // ============================================
-        // Kirim semua variabel ke view landing.blade.php
-        // ============================================
+        $penempatanList = PenempatanMagang::with('siswa.profile')->latest()->get()->map(function ($item) {
+            $item->status_display = $item->status_pengesahan;
+            return $item;
+        });
+
+        $pengajuanTerbaru = $pengajuanList->concat($penempatanList)
+            ->sortByDesc('created_at')
+            ->take(4)
+            ->values();
+
         return view('landing', compact(
             'jurnalDisetujui',
             'presensiTercatat',

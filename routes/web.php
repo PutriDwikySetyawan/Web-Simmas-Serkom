@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\DudiController;
 use App\Http\Controllers\Admin\PenempatanController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\LogController;
+use App\Http\Controllers\Admin\SearchController as AdminSearchController;
 
 // ============================================================
 // GURU
@@ -35,6 +36,7 @@ use App\Http\Controllers\Siswa\PengajuanController;
 use App\Http\Controllers\Siswa\AbsensiController;
 use App\Http\Controllers\Siswa\JurnalController;
 use App\Http\Controllers\Siswa\ProfilController as SiswaProfilController;
+use App\Http\Controllers\Siswa\SearchController as SiswaSearchController;
 
 
 /*
@@ -206,6 +208,13 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::delete('/logs', [LogController::class, 'clear'])
             ->name('logs.clear');
+
+        // --------------------------------------------------------
+        // PENCARIAN GLOBAL — TOPBAR
+        // --------------------------------------------------------
+
+        Route::get('/search', AdminSearchController::class)
+            ->name('search');
     });
 
 
@@ -358,4 +367,11 @@ Route::middleware(['auth', 'role:siswa'])
         Route::post('/profil', [SiswaProfilController::class, 'update'])
             ->name('profil.update');
         Route::put('/profil', [SiswaProfilController::class, 'update']);
+
+        // --------------------------------------------------------
+        // PENCARIAN GLOBAL — TOPBAR
+        // --------------------------------------------------------
+
+        Route::get('/search', SiswaSearchController::class)
+            ->name('search');
     });

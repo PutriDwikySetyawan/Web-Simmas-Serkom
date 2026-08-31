@@ -5,13 +5,7 @@
 
 @push('styles')
 <style>
-    .admin-main .admin-content {
-        width: 100%;
-        max-width: none;
-        margin: 0;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-    }
+
     /* =========================================================
        STAT CARD RINGKAS
     ========================================================= */
@@ -626,6 +620,8 @@
 
 @section('content')
 
+<div class="container-fluid py-4">
+
 {{-- =====================================================
      1. STAT CARD RINGKAS
 ====================================================== --}}
@@ -861,6 +857,8 @@
         </div>
 
     @endif
+
+</div>
 
 </div>
 

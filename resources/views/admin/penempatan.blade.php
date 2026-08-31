@@ -631,6 +631,12 @@
                                                 <i class="bi bi-x-circle me-2"></i> Tolak Pengajuan
                                             </a>
                                         </li>
+                                        @elseif ($item->status_pengesahan === 'ditolak')
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="konfirmasiSetujui('{{ $item->id }}','{{ addslashes($item->siswa->profile->nama ?? '-') }}','{{ addslashes($item->tempatMagang->nama_perusahaan ?? '-') }}')">
+                                                <i class="bi bi-check-circle me-2"></i> Validasi Ulang (Setujui)
+                                            </a>
+                                        </li>
                                         @else
 
                                         <li>
