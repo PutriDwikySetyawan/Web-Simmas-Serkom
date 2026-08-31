@@ -407,6 +407,31 @@
             padding: 24px 28px;
         }
 
+        .admin-sidebar-toggle {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--simmas-border);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--simmas-ink);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .admin-sidebar-overlay { display: none; }
+
+        .siswa-table, .guru-table, .mon-table, .dash-table {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .siswa-toolbar, .guru-toolbar, .mon-toolbar, .penempatan-toolbar {
+            flex-wrap: wrap;
+        }
+
         /* =========================================================
            TOMBOL SHARED — dipakai di halaman-halaman modul admin
            (Tambah Penempatan, tombol Batal/Simpan di semua modal, dst).
@@ -476,7 +501,27 @@
 
         @media (max-width: 991px) {
             .admin-sidebar {
-                display: none;
+                position: fixed;
+                z-index: 1050;
+                left: 0;
+                transform: translateX(-100%);
+                transition: transform .2s ease;
+                box-shadow: 8px 0 28px rgba(15, 23, 42, .16);
+            }
+
+            .admin-sidebar.is-open { transform: translateX(0); }
+
+            .admin-sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 1040;
+                background: rgba(15, 23, 42, .42);
+            }
+
+            .admin-sidebar-overlay.is-open { display: block; }
+
+            .admin-sidebar-toggle {
+                display: inline-flex;
             }
 
             .admin-topbar__search {
@@ -486,6 +531,27 @@
             .admin-topbar__user-meta {
                 display: none;
             }
+
+            .admin-topbar { padding: 12px 18px; }
+            .admin-content { padding: 20px; }
+            .penempatan-toolbar__right { width: 100%; justify-content: flex-start; }
+        }
+
+        @media (max-width: 575.98px) {
+            .admin-topbar { gap: 10px; padding: 10px 12px; }
+            .admin-topbar__title { font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .admin-topbar__actions { gap: 8px; }
+            .admin-topbar__divider, .admin-topbar__user .bi-chevron-down { display: none; }
+            .admin-topbar__user { padding: 4px; }
+            .admin-content { padding: 14px 12px 24px; }
+            .siswa-toolbar, .guru-toolbar, .mon-toolbar, .penempatan-toolbar,
+            .penempatan-toolbar__left, .penempatan-toolbar__filters { align-items: stretch !important; }
+            .siswa-toolbar__search, .guru-toolbar__search, .mon-toolbar__search,
+            .penempatan-toolbar__search { width: 100% !important; min-width: 0 !important; }
+            .siswa-toolbar__select, .guru-toolbar__select, .mon-toolbar__select,
+            .penempatan-toolbar__filters .form-select { flex: 1 1 140px; }
+            .modal-dialog { margin: .75rem; }
+            .modal-footer > * { flex: 1; }
         }
     </style>
 </head>
@@ -497,7 +563,7 @@
              SIDEBAR
         ====================================================== --}}
 
-        <aside class="admin-sidebar">
+        <aside class="admin-sidebar" id="adminSidebar">
 
             {{-- Brand --}}
             <div class="admin-sidebar__brand">
@@ -558,7 +624,7 @@
                     <i class="bi bi-diagram-3-fill"></i>
                     Penempatan Magang
                     @php
-                        $jmlPengajuanMenunggu = \App\Models\PengajuanMagang::where('status','menunggu')->count();
+                        $jmlPengajuanMenunggu = \App\Models\PenempatanMagang::where('status_pengesahan','menunggu')->count();
                     @endphp
                     @if ($jmlPengajuanMenunggu > 0)
                         <span style="
@@ -597,6 +663,7 @@
             </nav>
 
         </aside>
+        <div class="admin-sidebar-overlay" id="adminSidebarOverlay"></div>
 
 
         {{-- =====================================================
@@ -608,8 +675,13 @@
             {{-- Topbar --}}
             <header class="admin-topbar">
 
-                <div class="admin-topbar__title">
-                    @yield('page-title', 'Dashboard')
+                <div class="d-flex align-items-center gap-2 min-w-0">
+                    <button type="button" class="admin-sidebar-toggle" id="adminSidebarToggle" aria-label="Buka menu">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="admin-topbar__title">
+                        @yield('page-title', 'Dashboard')
+                    </div>
                 </div>
 
                 <div class="admin-topbar__actions">
@@ -673,6 +745,17 @@
 
     {{-- JS custom aplikasi --}}
     <script src="{{ asset('js/app.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('adminSidebarOverlay');
+            const toggle = document.getElementById('adminSidebarToggle');
+            const close = () => { sidebar?.classList.remove('is-open'); overlay?.classList.remove('is-open'); };
+            toggle?.addEventListener('click', () => { sidebar?.classList.toggle('is-open'); overlay?.classList.toggle('is-open'); });
+            overlay?.addEventListener('click', close);
+            document.querySelectorAll('.admin-sidebar__link').forEach(link => link.addEventListener('click', close));
+        });
+    </script>
 
     {{-- Slot untuk JS tambahan khusus per halaman --}}
     @stack('scripts')

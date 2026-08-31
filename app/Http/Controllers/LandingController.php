@@ -8,7 +8,7 @@ namespace App\Http\Controllers;
 use App\Models\Absensi;
 use App\Models\Guru;
 use App\Models\JurnalHarian;
-use App\Models\PengajuanMagang;
+use App\Models\PenempatanMagang;
 use App\Models\Siswa;
 use App\Models\TempatMagang;
 
@@ -39,7 +39,7 @@ class LandingController extends Controller
         $totalGuru        = Guru::count();
 
         // Cuplikan permohonan magang terbaru untuk preview dashboard di hero landing page
-        $pengajuanTerbaru = PengajuanMagang::with('siswa.profile')
+        $pengajuanTerbaru = PenempatanMagang::with('siswa.profile')
             ->latest()
             ->take(4)
             ->get();

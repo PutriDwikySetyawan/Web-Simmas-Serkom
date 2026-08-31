@@ -377,6 +377,37 @@
     }
 
     .panduan-simmas__step-title { margin-bottom: 10px !important; }
+
+    @media (max-width: 991.98px) {
+        .hero-simmas { padding: 72px 0 64px; }
+        .hero-simmas__diagonal { width: 58%; opacity: .16; clip-path: none; }
+        .hero-preview { max-width: 620px; margin: 0 auto; padding: 0; }
+        .panduan-simmas__track::before { display: none; }
+        .panduan-simmas__track { margin-top: 24px; }
+        .panduan-simmas__subtitle { margin-bottom: 36px !important; }
+    }
+
+    @media (max-width: 575.98px) {
+        .hero-simmas { padding: 48px 0 44px; }
+        .hero-simmas__diagonal, .hero-simmas__rings,
+        .fitur-simmas__decor, .statistik-simmas__decor, .panduan-simmas__decor { display: none; }
+        .hero-simmas__title { font-size: 2rem !important; }
+        .hero-simmas__desc { font-size: .95rem; }
+        .hero-simmas__checklist li { align-items: flex-start; font-size: .9rem; }
+        .hero-simmas__check { flex-shrink: 0; }
+        .hero-simmas .btn { width: 100%; justify-content: center; min-height: 46px; }
+        .hero-preview__window { transform: none !important; }
+        .hero-preview__sidebar { display: none; }
+        .hero-preview__body { min-height: 0; }
+        .hero-preview__main { padding: 14px; }
+        .hero-preview__stats { gap: 5px; margin-bottom: 12px; }
+        .hero-preview__stat-value { font-size: .95rem; }
+        .hero-preview__row { gap: 6px; }
+        .hero-preview__row-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .panduan-simmas { padding-top: 48px !important; padding-bottom: 48px !important; }
+        .panduan-simmas__step { text-align: left !important; display: grid; grid-template-columns: 54px 1fr; column-gap: 14px; }
+        .panduan-simmas__step-number { grid-row: span 2; margin: 0 !important; }
+    }
     </style>
 @endpush
 
@@ -470,13 +501,13 @@
                                         @forelse ($pengajuanTerbaru as $pengajuan)
                                             @php
                                                 $namaSiswa = $pengajuan->siswa->profile->nama ?? '-';
-                                                $badgeClass = match($pengajuan->status) {
-                                                    'disetujui' => 'hero-preview__badge--success',
+                                                $badgeClass = match($pengajuan->status_pengesahan) {
+                                                    'disahkan', 'lulus_magang' => 'hero-preview__badge--success',
                                                     'ditolak'   => 'hero-preview__badge--danger',
                                                     default     => 'hero-preview__badge--warning',
                                                 };
-                                                $statusLabel = match($pengajuan->status) {
-                                                    'disetujui' => 'Diterima',
+                                                $statusLabel = match($pengajuan->status_pengesahan) {
+                                                    'disahkan', 'lulus_magang' => 'Diterima',
                                                     'ditolak'   => 'Ditolak',
                                                     default     => 'Menunggu',
                                                 };

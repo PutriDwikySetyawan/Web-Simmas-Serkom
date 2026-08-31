@@ -413,7 +413,15 @@
             padding: 1.5rem 1.75rem;
 
             flex-grow: 1;
+            min-width: 0;
         }
+
+        .guru-content .table-responsive {
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .guru-content table { max-width: 100%; }
 
 
         /* ==========================================================
@@ -489,6 +497,22 @@
             .guru-topbar {
                 padding: 0.9rem 1.1rem;
             }
+        }
+
+        @media (max-width: 575.98px) {
+            .guru-content { padding: .9rem .75rem 1.5rem; }
+            .guru-topbar { padding: .75rem; gap: .65rem; }
+            .guru-topbar__title {
+                font-size: .92rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .guru-content .btn:not(.btn-sm),
+            .guru-content .form-control,
+            .guru-content .form-select { min-height: 42px; }
+            .guru-content .modal-dialog { margin: .75rem; }
+            .guru-content .modal-footer > * { flex: 1; }
         }
 
 

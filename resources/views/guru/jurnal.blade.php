@@ -289,6 +289,11 @@
     object-fit: cover;
     display: block;
 }
+    @media (max-width: 575.98px) {
+        .vj-stat-card { padding: .9rem 1rem; }
+        .vj-tabs { overflow-x: auto; white-space: nowrap; }
+        .vj-tabs .nav-link { margin-right: 1rem; }
+    }
 </style>
 @endsection
 

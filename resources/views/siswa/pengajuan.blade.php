@@ -16,7 +16,10 @@
     $catatanPenolakan = null;
 
     if ($pengajuanTerakhir) {
-        $status = $pengajuanTerakhir->status; // 'menunggu', 'disetujui', 'ditolak'
+        $status = match ($pengajuanTerakhir->status_pengesahan) {
+            'disahkan', 'lulus_magang' => 'disetujui',
+            default => $pengajuanTerakhir->status_pengesahan,
+        };
         $namaDudi = $pengajuanTerakhir->tempatMagang->nama_perusahaan ?? '-';
         $alamatDudi = $pengajuanTerakhir->tempatMagang->alamat ?? null;
         $posisi = $pengajuanTerakhir->posisi ?? '-';

@@ -427,6 +427,11 @@
     object-fit: contain;
     border: 1px solid var(--guru-border);
 }
+    @media (max-width: 575.98px) {
+        .kj-header { margin-bottom: 1.25rem; }
+        #btnBukaTambahKunjungan { width: 100%; justify-content: center; min-height: 42px; }
+        .kj-stat-card { padding: 1rem; }
+    }
 </style>
 @endsection
 

@@ -447,6 +447,12 @@
         margin-top: 0.3rem;
         display: none;
     }
+    @media (max-width: 575.98px) {
+        .sw-panel { padding: 1rem; border-radius: 14px; }
+        .sw-toolbar { align-items: stretch; margin-bottom: 1rem; }
+        .sw-search-box, .sw-btn-tulis { max-width: none; width: 100%; justify-content: center; }
+        .sw-table th, .sw-table td { padding-left: .75rem; padding-right: .75rem; }
+    }
 </style>
 @endsection
 

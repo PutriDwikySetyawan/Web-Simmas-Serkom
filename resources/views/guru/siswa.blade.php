@@ -201,6 +201,11 @@
         max-width: 340px;
         margin: 0 auto;
     }
+    @media (max-width: 575.98px) {
+        .sb-stat-card { padding: .9rem 1rem; }
+        .sb-table-card { border-radius: 12px; }
+        .sb-table thead th, .sb-table tbody td { padding-left: .75rem; padding-right: .75rem; }
+    }
 </style>
 @endsection
 

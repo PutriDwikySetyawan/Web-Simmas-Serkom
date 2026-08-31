@@ -3,55 +3,71 @@
 namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
-
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     /**
-     * Utama: Dashboard Siswa (/siswa/dashboard)
+     * Dashboard siswa dengan data aktual dari profil, penempatan, absensi, dan jurnal.
      */
     public function index()
     {
         $siswa = auth()->user()->siswa;
 
-        // ============================================
-        // Banner Penempatan: tempat magang & guru pembimbing
-        // ============================================
-        $penempatan = $siswa->penempatan()->with(['tempatMagang', 'guru.profile'])->first();
+        abort_if(! $siswa, 403, 'Data siswa tidak ditemukan untuk akun ini.');
 
-        // ============================================
-        // Progres magang: hari ke berapa dari total periode
-        // ============================================
-        $progresMagang = null;
+        $siswa->load('profile');
+        $penempatan = $siswa->penempatan()
+            ->with(['tempatMagang', 'guru.profile'])
+            ->first();
+
+        $statusPengajuan = $penempatan?->status_pengesahan ?? 'belum_mengajukan';
+        $magangAktif = $statusPengajuan === 'disahkan';
+        $magangSelesai = $statusPengajuan === 'lulus_magang';
+
+        $hariKe = 0;
+        $totalHariMagang = 0;
+        $tanggalSelesaiMagang = '-';
+        $progresPersen = 0;
+
         if ($penempatan) {
-            $mulai   = \Carbon\Carbon::parse($penempatan->tanggal_mulai);
-            $selesai = \Carbon\Carbon::parse($penempatan->tanggal_selesai);
-            $hariKe  = max(1, now()->diffInDays($mulai) + 1);
-            $totalHari = $mulai->diffInDays($selesai);
+            $mulai = Carbon::parse($penempatan->tanggal_mulai)->startOfDay();
+            $selesai = Carbon::parse($penempatan->tanggal_selesai)->startOfDay();
+            $hariIni = now()->startOfDay();
 
-            $progresMagang = [
-                'hari_ke'    => $hariKe,
-                'total_hari' => $totalHari,
-                'selesai_pada' => $selesai->translatedFormat('d M Y'),
-            ];
+            $totalHariMagang = max(1, $mulai->diffInDays($selesai) + 1);
+            $tanggalSelesaiMagang = $selesai->translatedFormat('d M Y');
+
+            if (($magangAktif || $magangSelesai) && $hariIni->gte($mulai)) {
+                $hariKe = min($totalHariMagang, $mulai->diffInDays($hariIni) + 1);
+                $progresPersen = $magangSelesai
+                    ? 100
+                    : (int) round(($hariKe / $totalHariMagang) * 100);
+            }
         }
 
-        // ============================================
-        // 2 Stat Card
-        // ============================================
         $totalKehadiran = $siswa->absensi()->where('status', 'hadir')->count();
-
-        $jurnalDitulis = $siswa->jurnalHarian()->count();
+        $totalJurnal = $siswa->jurnalHarian()->count();
         $jurnalTerverifikasi = $siswa->jurnalHarian()->where('status_verifikasi', 'disetujui')->count();
+        $sudahAbsenHariIni = $siswa->absensi()->whereDate('tanggal', today())->exists();
 
-        // ============================================
-        // Status absensi hari ini (untuk banner "Isi Absensi")
-        // ============================================
-        $absensiHariIni = $siswa->absensi()->whereDate('tanggal', today())->first();
-
-        return view('siswa.dashboard', compact(
-            'penempatan', 'progresMagang', 'totalKehadiran',
-            'jurnalDitulis', 'jurnalTerverifikasi', 'absensiHariIni'
-        ));
+        return view('siswa.dashboard', [
+            'penempatan' => $penempatan,
+            'namaSiswa' => $siswa->profile->nama ?? 'Siswa',
+            'namaPerusahaan' => $penempatan?->tempatMagang?->nama_perusahaan ?? '-',
+            'alamatSingkat' => $penempatan?->tempatMagang?->alamat,
+            'namaGuru' => $penempatan?->guru?->profile?->nama ?? 'Belum ditentukan',
+            'nipGuru' => $penempatan?->guru?->nip,
+            'statusPengajuan' => $statusPengajuan,
+            'hariKe' => $hariKe,
+            'totalHariMagang' => $totalHariMagang,
+            'tanggalSelesaiMagang' => $tanggalSelesaiMagang,
+            'progresPersen' => $progresPersen,
+            'totalKehadiran' => $totalKehadiran,
+            'totalJurnal' => $totalJurnal,
+            'jurnalTerverifikasi' => $jurnalTerverifikasi,
+            'sudahAbsenHariIni' => $sudahAbsenHariIni,
+            'magangAktif' => $magangAktif,
+        ]);
     }
 }

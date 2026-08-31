@@ -26,12 +26,11 @@ class ProfilController extends Controller
         $siswa->load([
             'penempatan.tempatMagang',
             'penempatan.guru.profile',
-            'pengajuan.tempatMagang',
         ]);
 
         $totalHadir = $siswa->absensi()->where('status', 'hadir')->count();
         $totalJurnal = $siswa->jurnalHarian()->count();
-        $pengajuanAktif = $siswa->pengajuan()->latest()->first();
+        $pengajuanAktif = $siswa->penempatan;
 
         return view('siswa.profil', compact(
             'profile',
@@ -100,4 +99,3 @@ class ProfilController extends Controller
         return back()->with('success', 'Pengaturan profil berhasil disimpan.');
     }
 }
-

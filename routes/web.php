@@ -179,15 +179,11 @@ Route::middleware(['auth', 'role:admin'])
         )->name('penempatan.batalkan');
 
 
-        // --------------------------------------------------------
-        // MANAJEMEN — PENGAJUAN MAGANG (aksi setujui/tolak, tab di halaman penempatan)
-        // --------------------------------------------------------
+        Route::patch('/penempatan/{penempatan}/validasi-pengajuan', [PenempatanController::class, 'validasiPengajuan'])
+            ->name('penempatan.validasi-pengajuan');
 
-        Route::patch('/pengajuan/{pengajuan}/setujui', [PenempatanController::class, 'setujuiPengajuan'])
-            ->name('pengajuan.setujui');
-
-        Route::patch('/pengajuan/{pengajuan}/tolak', [PenempatanController::class, 'tolakPengajuan'])
-            ->name('pengajuan.tolak');
+        Route::patch('/penempatan/{penempatan}/tolak-pengajuan', [PenempatanController::class, 'tolakPengajuan'])
+            ->name('penempatan.tolak-pengajuan');
 
 
         // --------------------------------------------------------

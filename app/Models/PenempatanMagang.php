@@ -11,8 +11,8 @@ class PenempatanMagang extends Model
 
     protected $table = 'penempatan_magang';
     protected $fillable = [
-        'siswa_id', 'tempat_magang_id', 'guru_id',
-        'tanggal_mulai', 'tanggal_selesai', 'status_pengesahan', 'nilai_akhir',
+        'siswa_id', 'tempat_magang_id', 'guru_id', 'posisi',
+        'tanggal_mulai', 'tanggal_selesai', 'status_pengesahan', 'catatan_penolakan', 'nilai_akhir',
     ];
 
     public function siswa()

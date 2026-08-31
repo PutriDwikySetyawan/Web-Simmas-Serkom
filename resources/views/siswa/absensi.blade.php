@@ -627,6 +627,13 @@
         .sw-today-card { padding: 1.15rem 1rem; }
         .sw-table-card { padding: 1.15rem 1rem; }
     }
+
+    @media (max-width: 575.98px) {
+        .sw-panel { padding: 1rem; border-radius: 14px; }
+        .sw-table-header { align-items: stretch; gap: .75rem; }
+        .sw-table-filter, .sw-table-filter select { width: 100%; }
+        .sw-table-filter select { min-height: 42px; }
+    }
 </style>
 @endsection
 

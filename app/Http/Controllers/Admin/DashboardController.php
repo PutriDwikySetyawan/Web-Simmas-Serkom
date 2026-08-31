@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Siswa;
 use App\Models\Guru;
 use App\Models\TempatMagang;
-use App\Models\PengajuanMagang;
 use App\Models\PenempatanMagang;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
@@ -49,7 +48,7 @@ class DashboardController extends Controller
 
         $mitraDudiTerverifikasi = TempatMagang::where('status_verifikasi', 'terverifikasi')->count();
 
-        $pengajuanMenungguValidasi = PengajuanMagang::where('status', 'menunggu')->count();
+        $pengajuanMenungguValidasi = PenempatanMagang::where('status_pengesahan', 'menunggu')->count();
 
         // ---------------------------------------------------
         // WIDGET STATUS PENGAJUAN
@@ -59,9 +58,9 @@ class DashboardController extends Controller
         // ditolak). $pengajuanMenungguValidasi di atas dipakai
         // ulang di sini supaya tidak query 2x untuk angka yang sama.
         $statusPengajuan = [
-            'disetujui' => PengajuanMagang::where('status', 'disetujui')->count(),
+            'disetujui' => PenempatanMagang::where('status_pengesahan', 'disahkan')->count(),
             'menunggu'  => $pengajuanMenungguValidasi,
-            'ditolak'   => PengajuanMagang::where('status', 'ditolak')->count(),
+            'ditolak'   => PenempatanMagang::where('status_pengesahan', 'ditolak')->count(),
         ];
 
         // ---------------------------------------------------
@@ -77,7 +76,8 @@ class DashboardController extends Controller
 
             $labelBulan[] = $bulan->translatedFormat('M'); // contoh: "Apr"
 
-            $dataPengajuan[] = PengajuanMagang::whereYear('created_at', $bulan->year)
+            $dataPengajuan[] = PenempatanMagang::where('status_pengesahan', 'menunggu')
+                ->whereYear('created_at', $bulan->year)
                 ->whereMonth('created_at', $bulan->month)
                 ->count();
         }
@@ -89,7 +89,7 @@ class DashboardController extends Controller
         // SEDANG aktif magang (status_pengesahan belum lulus)
         $distribusiDudi = TempatMagang::withCount([
             'penempatan as siswa_aktif_count' => function ($query) {
-                $query->where('status_pengesahan', '!=', 'lulus_magang');
+                $query->whereNotIn('status_pengesahan', ['ditolak', 'lulus_magang']);
             },
         ])
             ->orderByDesc('siswa_aktif_count')

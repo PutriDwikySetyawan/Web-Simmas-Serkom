@@ -317,7 +317,15 @@
         .app-content {
             padding: 1.6rem 1.75rem 2.5rem;
             flex: 1;
+            min-width: 0;
         }
+
+        .app-content .table-responsive {
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .app-content .sw-table { min-width: 640px; }
 
         /* ================= SIDEBAR OVERLAY (mobile) ================= */
         .app-sidebar-overlay {
@@ -389,8 +397,17 @@
 
         @media (max-width: 575.98px) {
             .app-content { padding: 1.25rem 1rem 2rem; }
-            .app-topbar { padding: 0 1rem; }
+            .app-topbar { padding: 0 .85rem; gap: .6rem; }
+            .app-topbar-right { gap: .3rem; }
+            .app-page-title { font-size: .92rem; }
             .app-user-name { display: none; }
+            .app-content .btn:not(.btn-sm),
+            .app-content .form-control,
+            .app-content .form-select { min-height: 42px; }
+            .app-content .modal-dialog { margin: .75rem; }
+            .app-content .modal-footer > * { flex: 1; }
+            .app-toast-container { left: .75rem; right: .75rem; top: .75rem; }
+            .app-toast { min-width: 0; max-width: none; }
         }
 
     </style>

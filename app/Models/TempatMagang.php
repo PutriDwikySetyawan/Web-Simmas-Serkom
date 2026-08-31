@@ -61,7 +61,9 @@ class TempatMagang extends Model
     public function getSisaKuotaAttribute()
     {
         $terpakai = $this->siswa_aktif_count
-            ?? $this->penempatan()->where('status_pengesahan', '!=', 'lulus_magang')->count();
+            ?? $this->penempatan()
+                ->whereNotIn('status_pengesahan', ['ditolak', 'lulus_magang'])
+                ->count();
 
         return max(0, $this->kuota - $terpakai);
     }

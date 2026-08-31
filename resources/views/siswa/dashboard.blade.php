@@ -10,7 +10,7 @@
     $alamatSingkat        = $alamatSingkat ?? null;
     $namaGuru             = $namaGuru ?? '-';
     $nipGuru               = $nipGuru ?? null;
-    $statusPengajuan      = strtolower($statusPengajuan ?? 'disetujui');
+    $statusPengajuan      = strtolower($statusPengajuan ?? 'belum_mengajukan');
     $hariKe               = $hariKe ?? 0;
     $totalHariMagang      = $totalHariMagang ?? 0;
     $tanggalSelesaiMagang = $tanggalSelesaiMagang ?? '-';
@@ -19,13 +19,17 @@
     $totalJurnal          = $totalJurnal ?? 0;
     $jurnalTerverifikasi  = $jurnalTerverifikasi ?? 0;
     $sudahAbsenHariIni    = $sudahAbsenHariIni ?? false;
+    $magangAktif          = $magangAktif ?? false;
 
     $statusMap = [
-        'disetujui' => ['label' => 'Disetujui', 'class' => 'sw-badge-green'],
-        'menunggu'  => ['label' => 'Menunggu Persetujuan', 'class' => 'sw-badge-orange'],
+        'disahkan'       => ['label' => 'Sedang Magang', 'class' => 'sw-badge-green'],
+        'lulus_magang'   => ['label' => 'Magang Selesai', 'class' => 'sw-badge-green'],
+        'menunggu'       => ['label' => 'Menunggu Validasi', 'class' => 'sw-badge-orange'],
+        'belum_disahkan' => ['label' => 'Belum Disahkan', 'class' => 'sw-badge-orange'],
         'ditolak'   => ['label' => 'Ditolak', 'class' => 'sw-badge-red'],
+        'belum_mengajukan' => ['label' => 'Belum Mengajukan', 'class' => 'sw-badge-orange'],
     ];
-    $statusBadge = $statusMap[$statusPengajuan] ?? $statusMap['disetujui'];
+    $statusBadge = $statusMap[$statusPengajuan] ?? $statusMap['belum_mengajukan'];
 @endphp
 
 @section('styles')
@@ -401,8 +405,16 @@
     }
 
     @media (max-width: 575.98px) {
-        .sw-banner { padding: 1.4rem 1.5rem; }
+        .sw-banner { padding: 1.25rem; }
+        .sw-banner-title { font-size: 1.25rem; }
+        .sw-banner-desc { font-size: .86rem; }
         .sw-banner-cta { width: 100%; justify-content: center; }
+        .sw-stat-card { min-height: auto; }
+        .sw-stat-value { font-size: 1.25rem; }
+        .sw-card-header { align-items: flex-start; gap: .75rem; }
+        .sw-info-row { align-items: flex-start; }
+        .sw-action-card { align-items: flex-start; flex-wrap: wrap; }
+        .sw-action-card .sw-action-btn { width: 100%; justify-content: center; }
     }
 </style>
 @endsection
@@ -417,23 +429,41 @@
         <div class="sw-banner-eyebrow">{{ \Carbon\Carbon::now()->translatedFormat('l, d F Y') }}</div>
         <div class="sw-banner-title">Semangat magang, {{ $namaSiswa }}!</div>
         <p class="sw-banner-desc mb-0">
+            @if($magangAktif)
             Anda magang di <strong>{{ $namaPerusahaan }}</strong>.
             @if(!$sudahAbsenHariIni)
                 Jangan lupa isi absensi hari ini.
             @else
                 Absensi hari ini sudah tercatat, terima kasih!
             @endif
+            @elseif($statusPengajuan === 'menunggu')
+                Pengajuan magang Anda sedang menunggu validasi admin.
+            @elseif($statusPengajuan === 'ditolak')
+                Pengajuan magang Anda ditolak. Silakan ajukan kembali.
+            @elseif($statusPengajuan === 'lulus_magang')
+                Selamat, program magang Anda telah selesai.
+            @else
+                Anda belum memiliki penempatan magang aktif.
+            @endif
         </p>
     </div>
 
-    @if(!$sudahAbsenHariIni)
+    @if($magangAktif && !$sudahAbsenHariIni)
         <a href="{{ url('siswa/absensi-harian') }}" class="sw-banner-cta">
             Isi Absensi <i class="bi bi-arrow-right"></i>
         </a>
-    @else
+    @elseif($magangAktif)
         <span class="sw-banner-cta is-done">
             <i class="bi bi-check-circle-fill"></i> Absensi Terisi
         </span>
+    @elseif($statusPengajuan === 'lulus_magang')
+        <a href="{{ route('siswa.profil.index') }}" class="sw-banner-cta">
+            Lihat Profil <i class="bi bi-arrow-right"></i>
+        </a>
+    @else
+        <a href="{{ route('siswa.pengajuan.index') }}" class="sw-banner-cta">
+            Ajukan Magang <i class="bi bi-arrow-right"></i>
+        </a>
     @endif
 </div>
 
@@ -530,6 +560,7 @@
                     <div class="sw-action-title">Absensi Hari Ini</div>
                     <p class="sw-action-desc">Jangan lupa mengisi daftar hadir sebelum jam kerja magang.</p>
                 </div>
+                @if($magangAktif)
                 <a href="{{ url('siswa/absensi-harian') }}" class="sw-action-btn">
                     @if($sudahAbsenHariIni)
                         <i class="bi bi-check2"></i> Sudah Diisi
@@ -537,6 +568,9 @@
                         Isi Absensi
                     @endif
                 </a>
+                @else
+                <a href="{{ route('siswa.pengajuan.index') }}" class="sw-action-btn">Lihat Pengajuan</a>
+                @endif
             </div>
 
             <div class="sw-action-card plain sw-fade-in" style="--sw-i: 6;">
@@ -545,9 +579,11 @@
                     <div class="sw-action-title">Jurnal Kegiatan</div>
                     <p class="sw-action-desc">Tulis pengalaman dan aktivitas harian Anda.</p>
                 </div>
-                <a href="{{ url('siswa/jurnal-kegiatan') }}" class="sw-action-btn">
-                    Tulis Jurnal
-                </a>
+                @if($magangAktif)
+                    <a href="{{ url('siswa/jurnal-kegiatan') }}" class="sw-action-btn">Tulis Jurnal</a>
+                @else
+                    <span class="text-muted small">Tersedia setelah penempatan disahkan.</span>
+                @endif
             </div>
         </div>
     </div>

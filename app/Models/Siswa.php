@@ -17,11 +17,6 @@ class Siswa extends Model
         return $this->belongsTo(Profile::class, 'user_id');
     }
 
-    public function pengajuan()
-    {
-        return $this->hasMany(PengajuanMagang::class, 'siswa_id');
-    }
-
     public function penempatan()
     {
         return $this->hasOne(PenempatanMagang::class, 'siswa_id')->latestOfMany();

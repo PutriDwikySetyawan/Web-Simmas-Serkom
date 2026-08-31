@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Guru;
 use App\Models\PenempatanMagang;
-use App\Models\PengajuanMagang;
 use App\Models\Siswa;
 use App\Models\TempatMagang;
 use Illuminate\Http\Request;
@@ -54,31 +53,9 @@ class PenempatanController extends Controller
     // ===== TAMBAHAN BARU: daftar kelas unik untuk dropdown filter Kelas =====
     $daftarKelas = Siswa::distinct()->pluck('kelas')->filter()->values();
 
-    // ===== PENGAJUAN MAGANG dari Siswa =====
-    $pengajuanQuery = PengajuanMagang::with(['siswa.profile', 'tempatMagang']);
-
-    if ($request->filled('cari_pengajuan')) {
-        $cari = $request->cari_pengajuan;
-        $pengajuanQuery->whereHas('siswa', function ($q) use ($cari) {
-            $q->where('nis', 'like', "%{$cari}%")
-              ->orWhereHas('profile', fn ($q2) => $q2->where('nama', 'like', "%{$cari}%"));
-        })->orWhereHas('tempatMagang', fn ($q) => $q->where('nama_perusahaan', 'like', "%{$cari}%"));
-    }
-
-    if ($request->filled('status_pengajuan') && $request->status_pengajuan !== 'semua') {
-        $pengajuanQuery->where('status', $request->status_pengajuan);
-    }
-
-    $pengajuanList      = $pengajuanQuery->latest()->paginate(10, ['*'], 'halaman_pengajuan')->withQueryString();
-    $totalPengajuan     = PengajuanMagang::count();
-    $pengajuanMenunggu  = PengajuanMagang::where('status', 'menunggu')->count();
-    $pengajuanDisetujui = PengajuanMagang::where('status', 'disetujui')->count();
-    $pengajuanDitolak   = PengajuanMagang::where('status', 'ditolak')->count();
-
     return view('admin.penempatan', compact(
         'penempatanList', 'siswaBelumMagang', 'dudiList', 'guruList',
-        'totalPenempatan', 'sedangBerlangsung', 'lulusMagang', 'dudiTerlibat', 'daftarKelas',
-        'pengajuanList', 'totalPengajuan', 'pengajuanMenunggu', 'pengajuanDisetujui', 'pengajuanDitolak'
+        'totalPenempatan', 'sedangBerlangsung', 'lulusMagang', 'dudiTerlibat', 'daftarKelas'
     ));
 }
     /**
@@ -176,30 +153,38 @@ class PenempatanController extends Controller
     }
 
     /**
-     * Setujui pengajuan magang dari siswa
+     * Validasi pengajuan yang tersimpan sebagai penempatan berstatus menunggu.
      */
-    public function setujuiPengajuan(PengajuanMagang $pengajuan)
+    public function validasiPengajuan(Request $request, PenempatanMagang $penempatan)
     {
-        if ($pengajuan->status !== 'menunggu') {
+        $validated = $request->validate([
+            'guru_id' => ['required', 'exists:guru,id'],
+        ]);
+
+        if ($penempatan->status_pengesahan !== 'menunggu') {
             return response()->json(['message' => 'Pengajuan sudah diproses sebelumnya.'], 422);
         }
 
-        $pengajuan->update(['status' => 'disetujui', 'catatan_penolakan' => null]);
-        $pengajuan->siswa()->update(['status' => 'pengajuan']);
+        $penempatan->update([
+            'guru_id' => $validated['guru_id'],
+            'status_pengesahan' => 'disahkan',
+            'catatan_penolakan' => null,
+        ]);
+        $penempatan->siswa()->update(['status' => 'sedang_magang']);
 
         $this->logActivity(
-            'SETUJUI_PENGAJUAN',
-            "Admin menyetujui pengajuan dari " . ($pengajuan->siswa->profile->nama ?? '-') .
-            " ke " . ($pengajuan->tempatMagang->nama_perusahaan ?? '-')
+            'VALIDASI_PENGAJUAN_PENEMPATAN',
+            "Admin memvalidasi penempatan " . ($penempatan->siswa->profile->nama ?? '-') .
+            " ke " . ($penempatan->tempatMagang->nama_perusahaan ?? '-')
         );
 
-        return response()->json(['message' => 'Pengajuan berhasil disetujui.']);
+        return response()->json(['message' => 'Pengajuan berhasil divalidasi.']);
     }
 
     /**
      * Tolak pengajuan magang dari siswa
      */
-    public function tolakPengajuan(Request $request, PengajuanMagang $pengajuan)
+    public function tolakPengajuan(Request $request, PenempatanMagang $penempatan)
     {
         $request->validate([
             'catatan_penolakan' => ['required', 'string', 'max:500'],
@@ -207,19 +192,19 @@ class PenempatanController extends Controller
             'catatan_penolakan.required' => 'Catatan alasan penolakan wajib diisi.',
         ]);
 
-        if ($pengajuan->status !== 'menunggu') {
+        if ($penempatan->status_pengesahan !== 'menunggu') {
             return response()->json(['message' => 'Pengajuan sudah diproses sebelumnya.'], 422);
         }
 
-        $pengajuan->update([
-            'status'            => 'ditolak',
+        $penempatan->update([
+            'status_pengesahan' => 'ditolak',
             'catatan_penolakan' => $request->catatan_penolakan,
         ]);
-        $pengajuan->siswa()->update(['status' => 'belum_magang']);
+        $penempatan->siswa()->update(['status' => 'belum_magang']);
 
         $this->logActivity(
             'TOLAK_PENGAJUAN',
-            "Admin menolak pengajuan dari " . ($pengajuan->siswa->profile->nama ?? '-') .
+            "Admin menolak pengajuan dari " . ($penempatan->siswa->profile->nama ?? '-') .
             ". Alasan: {$request->catatan_penolakan}"
         );
 

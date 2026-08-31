@@ -12,11 +12,13 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('siswa_id');
             $table->uuid('tempat_magang_id');
-            $table->uuid('guru_id');
+            $table->uuid('guru_id')->nullable();
+            $table->string('posisi')->nullable();
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
-            $table->enum('status_pengesahan', ['belum_disahkan', 'disahkan', 'lulus_magang'])
+            $table->enum('status_pengesahan', ['menunggu', 'belum_disahkan', 'disahkan', 'ditolak', 'lulus_magang'])
                 ->default('belum_disahkan');
+            $table->text('catatan_penolakan')->nullable();
             $table->unsignedTinyInteger('nilai_akhir')->nullable();
             $table->timestamps();
 

@@ -421,6 +421,15 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .guru-list-item {
+                align-items: flex-start !important;
+                flex-direction: column;
+                gap: .65rem !important;
+            }
+
+            .guru-list-item .btn,
+            .guru-list-item .badge { align-self: flex-end; }
         }
     </style>
 
