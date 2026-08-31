@@ -12,7 +12,7 @@ class PenempatanMagang extends Model
     protected $table = 'penempatan_magang';
     protected $fillable = [
         'siswa_id', 'tempat_magang_id', 'guru_id', 'posisi',
-        'tanggal_mulai', 'tanggal_selesai', 'status_pengesahan', 'catatan_penolakan', 'nilai_akhir',
+        'tanggal_mulai', 'tanggal_selesai', 'status_pengesahan', 'catatan_penolakan', 'nilai_akhir', 'pengajuan_id',
     ];
 
     public function siswa()
@@ -28,5 +28,10 @@ class PenempatanMagang extends Model
     public function guru()
     {
         return $this->belongsTo(Guru::class, 'guru_id');
+    }
+
+    public function pengajuan()
+    {
+        return $this->belongsTo(PengajuanMagang::class, 'pengajuan_id');
     }
 }

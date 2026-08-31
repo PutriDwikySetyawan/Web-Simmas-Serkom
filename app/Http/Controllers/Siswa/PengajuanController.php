@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\PengajuanMagang;
 use App\Models\PenempatanMagang;
 use App\Models\TempatMagang;
 use Illuminate\Http\Request;
@@ -21,17 +22,19 @@ class PengajuanController extends Controller
             abort(403, 'Data siswa tidak ditemukan untuk akun ini.');
         }
 
-        // Penempatan terakhir juga menjadi sumber status pengajuan siswa.
+        // Ambil pengajuan terakhir dari tabel pengajuan_magang
+        $pengajuanTerakhir = PengajuanMagang::where('siswa_id', $siswa->id)
+            ->with(['tempatMagang'])
+            ->latest()
+            ->first();
+
+        // Penempatan resmi dari admin
         $penempatan = $siswa->penempatan()->with(['tempatMagang', 'guru.profile'])->first();
 
-        // ============================================
         // Dropdown DUDI mitra dengan info sisa kuota (untuk Modal Form Pengajuan)
-        // ============================================
         $dudiList = TempatMagang::where('status_verifikasi', 'terverifikasi')
             ->orderBy('nama_perusahaan', 'asc')
             ->get();
-
-        $pengajuanTerakhir = $penempatan;
 
         // Cek apakah siswa sudah punya penempatan resmi aktif / magang
         $sudahMagang = $siswa->status === 'sedang_magang' || $siswa->status === 'lulus' || ($penempatan && $penempatan->status_pengesahan === 'disahkan');
@@ -79,13 +82,14 @@ class PengajuanController extends Controller
             return back()->withErrors(['tempat_magang_id' => 'Kuota tempat magang ini sudah penuh.'])->withInput();
         }
 
-        $penempatan = PenempatanMagang::create([
+        // Simpan ke tabel pengajuan_magang yang baru
+        $pengajuan = PengajuanMagang::create([
             'siswa_id'         => $siswa->id,
             'tempat_magang_id' => $validated['tempat_magang_id'],
             'posisi'           => $validated['posisi'],
             'tanggal_mulai'    => $validated['tanggal_mulai'],
             'tanggal_selesai'  => $validated['tanggal_selesai'],
-            'status_pengesahan' => 'menunggu',
+            'status'           => 'menunggu',
         ]);
 
         // Update status siswa jadi "pengajuan" jika status masih belum_magang
@@ -102,7 +106,7 @@ class PengajuanController extends Controller
             'ip_address'  => request()->ip(),
             'metadata'    => [
                 'description'   => "Siswa {$siswa->profile->nama} mengajukan magang di {$tempatMagang->nama_perusahaan} posisi {$validated['posisi']}",
-                'penempatan_id' => $penempatan->id,
+                'pengajuan_id'  => $pengajuan->id,
                 'tempat_magang' => $tempatMagang->nama_perusahaan,
                 'posisi'        => $validated['posisi'],
             ],
@@ -112,7 +116,8 @@ class PengajuanController extends Controller
             return response()->json([
                 'success'   => true,
                 'message'   => 'Pengajuan magang berhasil dikirim dan sedang ditinjau sekolah.',
-                'penempatan' => $penempatan->load('tempatMagang'),
+                'pengajuan' => $pengajuan->load('tempatMagang'),
+                'penempatan' => $pengajuan->load('tempatMagang'), // alias untuk kompatibilitas JS jika ada
             ]);
         }
 

@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
+use App\Models\PengajuanMagang;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     /**
-     * Dashboard siswa dengan data aktual dari profil, penempatan, absensi, dan jurnal.
+     * Dashboard siswa dengan data aktual dari profil, penempatan, pengajuan, absensi, dan jurnal.
      */
     public function index()
     {
@@ -17,11 +18,27 @@ class DashboardController extends Controller
         abort_if(! $siswa, 403, 'Data siswa tidak ditemukan untuk akun ini.');
 
         $siswa->load('profile');
+
         $penempatan = $siswa->penempatan()
             ->with(['tempatMagang', 'guru.profile'])
             ->first();
 
-        $statusPengajuan = $penempatan?->status_pengesahan ?? 'belum_mengajukan';
+        $pengajuan = PengajuanMagang::where('siswa_id', $siswa->id)
+            ->with(['tempatMagang'])
+            ->latest()
+            ->first();
+
+        $statusPengajuan = 'belum_mengajukan';
+        if ($penempatan) {
+            $statusPengajuan = $penempatan->status_pengesahan;
+        } elseif ($pengajuan) {
+            $statusPengajuan = match ($pengajuan->status) {
+                'disetujui' => 'disahkan',
+                'ditolak' => 'ditolak',
+                default => 'menunggu',
+            };
+        }
+
         $magangAktif = $statusPengajuan === 'disahkan';
         $magangSelesai = $statusPengajuan === 'lulus_magang';
 
@@ -30,9 +47,11 @@ class DashboardController extends Controller
         $tanggalSelesaiMagang = '-';
         $progresPersen = 0;
 
-        if ($penempatan) {
-            $mulai = Carbon::parse($penempatan->tanggal_mulai)->startOfDay();
-            $selesai = Carbon::parse($penempatan->tanggal_selesai)->startOfDay();
+        $targetPlacement = $penempatan ?? $pengajuan;
+
+        if ($targetPlacement) {
+            $mulai = Carbon::parse($targetPlacement->tanggal_mulai)->startOfDay();
+            $selesai = Carbon::parse($targetPlacement->tanggal_selesai)->startOfDay();
             $hariIni = now()->startOfDay();
 
             $totalHariMagang = max(1, $mulai->diffInDays($selesai) + 1);
@@ -46,6 +65,13 @@ class DashboardController extends Controller
             }
         }
 
+        $namaPerusahaan = $penempatan?->tempatMagang?->nama_perusahaan
+            ?? $pengajuan?->tempatMagang?->nama_perusahaan
+            ?? '-';
+
+        $alamatSingkat = $penempatan?->tempatMagang?->alamat
+            ?? $pengajuan?->tempatMagang?->alamat;
+
         $totalKehadiran = $siswa->absensi()->where('status', 'hadir')->count();
         $totalJurnal = $siswa->jurnalHarian()->count();
         $jurnalTerverifikasi = $siswa->jurnalHarian()->where('status_verifikasi', 'disetujui')->count();
@@ -53,9 +79,10 @@ class DashboardController extends Controller
 
         return view('siswa.dashboard', [
             'penempatan' => $penempatan,
+            'pengajuan' => $pengajuan,
             'namaSiswa' => $siswa->profile->nama ?? 'Siswa',
-            'namaPerusahaan' => $penempatan?->tempatMagang?->nama_perusahaan ?? '-',
-            'alamatSingkat' => $penempatan?->tempatMagang?->alamat,
+            'namaPerusahaan' => $namaPerusahaan,
+            'alamatSingkat' => $alamatSingkat,
             'namaGuru' => $penempatan?->guru?->profile?->nama ?? 'Belum ditentukan',
             'nipGuru' => $penempatan?->guru?->nip,
             'statusPengajuan' => $statusPengajuan,

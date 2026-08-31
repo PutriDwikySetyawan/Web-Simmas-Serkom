@@ -22,6 +22,11 @@ class Siswa extends Model
         return $this->hasOne(PenempatanMagang::class, 'siswa_id')->latestOfMany();
     }
 
+    public function pengajuan()
+    {
+        return $this->hasOne(PengajuanMagang::class, 'siswa_id')->latestOfMany();
+    }
+
     public function absensi()
     {
         return $this->hasMany(Absensi::class, 'siswa_id');

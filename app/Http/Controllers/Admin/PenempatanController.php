@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Guru;
+use App\Models\PengajuanMagang;
 use App\Models\PenempatanMagang;
 use App\Models\Siswa;
 use App\Models\TempatMagang;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PenempatanController extends Controller
 {
@@ -16,48 +18,86 @@ class PenempatanController extends Controller
      * Manajemen: Penempatan Magang (/admin/penempatan)
      */
     public function index(Request $request)
-{
-    $query = PenempatanMagang::with(['siswa.profile', 'tempatMagang', 'guru.profile']);
+    {
+        $pengajuanQuery = PengajuanMagang::with(['siswa.profile', 'tempatMagang'])
+            ->where('status', 'menunggu');
 
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->whereHas('siswa', fn ($q) => $q->where('nis', 'like', "%{$search}%")
-            ->orWhereHas('profile', fn ($q2) => $q2->where('nama', 'like', "%{$search}%")));
+        $penempatanQuery = PenempatanMagang::with(['siswa.profile', 'tempatMagang', 'guru.profile']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $pengajuanQuery->whereHas('siswa', fn ($q) => $q->where('nis', 'like', "%{$search}%")
+                ->orWhereHas('profile', fn ($q2) => $q2->where('nama', 'like', "%{$search}%")));
+            $penempatanQuery->whereHas('siswa', fn ($q) => $q->where('nis', 'like', "%{$search}%")
+                ->orWhereHas('profile', fn ($q2) => $q2->where('nama', 'like', "%{$search}%")));
+        }
+
+        if ($request->filled('kelas') && $request->kelas !== 'semua') {
+            $pengajuanQuery->whereHas('siswa', fn ($q) => $q->where('kelas', $request->kelas));
+            $penempatanQuery->whereHas('siswa', fn ($q) => $q->where('kelas', $request->kelas));
+        }
+
+        if ($request->filled('dudi') && $request->dudi !== 'semua') {
+            $pengajuanQuery->where('tempat_magang_id', $request->dudi);
+            $penempatanQuery->where('tempat_magang_id', $request->dudi);
+        }
+
+        $statusFilter = $request->input('status', 'semua');
+
+        $combined = collect();
+
+        if ($statusFilter === 'semua' || $statusFilter === 'menunggu') {
+            $pendingPengajuans = $pengajuanQuery->get()->map(function ($p) {
+                $p->status_pengesahan = 'menunggu';
+                $p->guru = null;
+                $p->guru_id = null;
+                return $p;
+            });
+            $combined = $combined->concat($pendingPengajuans);
+        }
+
+        if ($statusFilter === 'semua' || $statusFilter !== 'menunggu') {
+            if ($statusFilter !== 'semua') {
+                $penempatanQuery->where('status_pengesahan', $statusFilter);
+            }
+            $penempatans = $penempatanQuery->get();
+            $combined = $combined->concat($penempatans);
+        }
+
+        $sorted = $combined->sortByDesc('created_at')->values();
+
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 10;
+        $currentPageItems = $sorted->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $penempatanList = new LengthAwarePaginator(
+            $currentPageItems,
+            $sorted->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        // Data pendukung untuk dropdown Form Tambah Penempatan
+        $siswaBelumMagang = Siswa::where('status', 'belum_magang')->with('profile')->get();
+        $dudiList         = TempatMagang::where('status_verifikasi', 'terverifikasi')->get();
+        $guruList         = Guru::with('profile')->where('is_active', true)->get();
+
+        // Statistik ringkas untuk 4 kartu di atas tabel
+        $totalPenempatan   = PenempatanMagang::count() + PengajuanMagang::where('status', 'menunggu')->count();
+        $sedangBerlangsung = PenempatanMagang::where('status_pengesahan', 'disahkan')->count();
+        $lulusMagang       = PenempatanMagang::where('status_pengesahan', 'lulus_magang')->count();
+        $dudiTerlibat      = PenempatanMagang::distinct('tempat_magang_id')->count('tempat_magang_id');
+
+        // Daftar kelas unik untuk dropdown filter Kelas
+        $daftarKelas = Siswa::distinct()->pluck('kelas')->filter()->values();
+
+        return view('admin.penempatan', compact(
+            'penempatanList', 'siswaBelumMagang', 'dudiList', 'guruList',
+            'totalPenempatan', 'sedangBerlangsung', 'lulusMagang', 'dudiTerlibat', 'daftarKelas'
+        ));
     }
 
-    if ($request->filled('kelas') && $request->kelas !== 'semua') {
-        $query->whereHas('siswa', fn ($q) => $q->where('kelas', $request->kelas));
-    }
-
-    if ($request->filled('dudi') && $request->dudi !== 'semua') {
-        $query->where('tempat_magang_id', $request->dudi);
-    }
-
-    if ($request->filled('status') && $request->status !== 'semua') {
-        $query->where('status_pengesahan', $request->status);
-    }
-
-    $penempatanList = $query->latest()->paginate(10);
-
-    // Data pendukung untuk dropdown Form Tambah Penempatan
-    $siswaBelumMagang = Siswa::where('status', 'belum_magang')->with('profile')->get();
-    $dudiList         = TempatMagang::where('status_verifikasi', 'terverifikasi')->get();
-    $guruList         = Guru::with('profile')->where('is_active', true)->get();
-
-    // ===== TAMBAHAN BARU: statistik ringkas untuk 4 kartu di atas tabel =====
-    $totalPenempatan   = PenempatanMagang::count();
-    $sedangBerlangsung = PenempatanMagang::where('status_pengesahan', 'disahkan')->count();
-    $lulusMagang       = PenempatanMagang::where('status_pengesahan', 'lulus_magang')->count();
-    $dudiTerlibat      = PenempatanMagang::distinct('tempat_magang_id')->count('tempat_magang_id');
-
-    // ===== TAMBAHAN BARU: daftar kelas unik untuk dropdown filter Kelas =====
-    $daftarKelas = Siswa::distinct()->pluck('kelas')->filter()->values();
-
-    return view('admin.penempatan', compact(
-        'penempatanList', 'siswaBelumMagang', 'dudiList', 'guruList',
-        'totalPenempatan', 'sedangBerlangsung', 'lulusMagang', 'dudiTerlibat', 'daftarKelas'
-    ));
-}
     /**
      * Simpan penempatan resmi baru
      */
@@ -71,10 +111,8 @@ class PenempatanController extends Controller
             'tanggal_selesai'  => ['required', 'date', 'after:tanggal_mulai'],
         ]);
 
-            $tempatMagang = TempatMagang::findOrFail($validated['tempat_magang_id']);
+        $tempatMagang = TempatMagang::findOrFail($validated['tempat_magang_id']);
 
-        // Validasi kuota otomatis — tolak kalau kuota DUDI sudah penuh
-        // (sisa_kuota diakses sebagai properti, sesuai getSisaKuotaAttribute() di Model)
         if ($tempatMagang->sisa_kuota <= 0) {
             return response()->json([
                 'message' => 'Kuota tempat magang ini sudah penuh.',
@@ -127,7 +165,6 @@ class PenempatanController extends Controller
 
         $penempatan->update($validated);
 
-        // Kalau lulus magang, update juga status siswa
         if ($validated['status_pengesahan'] === 'lulus_magang') {
             $penempatan->siswa()->update(['status' => 'lulus']);
         }
@@ -153,29 +190,59 @@ class PenempatanController extends Controller
     }
 
     /**
-     * Validasi pengajuan yang tersimpan sebagai penempatan berstatus menunggu.
+     * Validasi pengajuan dari tabel pengajuan_magang
      */
-    public function validasiPengajuan(Request $request, PenempatanMagang $penempatan)
+    public function validasiPengajuan(Request $request, $id)
     {
         $validated = $request->validate([
             'guru_id' => ['required', 'exists:guru,id'],
         ]);
 
-        if ($penempatan->status_pengesahan !== 'menunggu') {
+        $pengajuan = PengajuanMagang::find($id);
+
+        if (!$pengajuan) {
+            $penempatan = PenempatanMagang::find($id);
+            if ($penempatan && $penempatan->status_pengesahan === 'menunggu') {
+                $penempatan->update([
+                    'guru_id' => $validated['guru_id'],
+                    'status_pengesahan' => 'disahkan',
+                    'catatan_penolakan' => null,
+                ]);
+                $penempatan->siswa()->update(['status' => 'sedang_magang']);
+                return response()->json(['message' => 'Pengajuan berhasil divalidasi.']);
+            }
+            return response()->json(['message' => 'Data pengajuan tidak ditemukan.'], 404);
+        }
+
+        if ($pengajuan->status !== 'menunggu') {
             return response()->json(['message' => 'Pengajuan sudah diproses sebelumnya.'], 422);
         }
 
-        $penempatan->update([
-            'guru_id' => $validated['guru_id'],
-            'status_pengesahan' => 'disahkan',
+        // 1. Ubah status di pengajuan_magang
+        $pengajuan->update([
+            'status' => 'disetujui',
             'catatan_penolakan' => null,
         ]);
-        $penempatan->siswa()->update(['status' => 'sedang_magang']);
+
+        // 2. Buat record baru di penempatan_magang (dengan pengajuan_id terisi)
+        $penempatan = PenempatanMagang::create([
+            'siswa_id'         => $pengajuan->siswa_id,
+            'tempat_magang_id' => $pengajuan->tempat_magang_id,
+            'guru_id'          => $validated['guru_id'],
+            'posisi'           => $pengajuan->posisi,
+            'tanggal_mulai'    => $pengajuan->tanggal_mulai,
+            'tanggal_selesai'  => $pengajuan->tanggal_selesai,
+            'status_pengesahan' => 'disahkan',
+            'pengajuan_id'     => $pengajuan->id,
+        ]);
+
+        // 3. Update status siswa jadi sedang_magang
+        $pengajuan->siswa()->update(['status' => 'sedang_magang']);
 
         $this->logActivity(
             'VALIDASI_PENGAJUAN_PENEMPATAN',
-            "Admin memvalidasi penempatan " . ($penempatan->siswa->profile->nama ?? '-') .
-            " ke " . ($penempatan->tempatMagang->nama_perusahaan ?? '-')
+            "Admin memvalidasi penempatan " . ($pengajuan->siswa->profile->nama ?? '-') .
+            " ke " . ($pengajuan->tempatMagang->nama_perusahaan ?? '-')
         );
 
         return response()->json(['message' => 'Pengajuan berhasil divalidasi.']);
@@ -184,7 +251,7 @@ class PenempatanController extends Controller
     /**
      * Tolak pengajuan magang dari siswa
      */
-    public function tolakPengajuan(Request $request, PenempatanMagang $penempatan)
+    public function tolakPengajuan(Request $request, $id)
     {
         $request->validate([
             'catatan_penolakan' => ['required', 'string', 'max:500'],
@@ -192,19 +259,35 @@ class PenempatanController extends Controller
             'catatan_penolakan.required' => 'Catatan alasan penolakan wajib diisi.',
         ]);
 
-        if ($penempatan->status_pengesahan !== 'menunggu') {
+        $pengajuan = PengajuanMagang::find($id);
+
+        if (!$pengajuan) {
+            $penempatan = PenempatanMagang::find($id);
+            if ($penempatan && $penempatan->status_pengesahan === 'menunggu') {
+                $penempatan->update([
+                    'status_pengesahan' => 'ditolak',
+                    'catatan_penolakan' => $request->catatan_penolakan,
+                ]);
+                $penempatan->siswa()->update(['status' => 'belum_magang']);
+                return response()->json(['message' => 'Pengajuan berhasil ditolak.']);
+            }
+            return response()->json(['message' => 'Data pengajuan tidak ditemukan.'], 404);
+        }
+
+        if ($pengajuan->status !== 'menunggu') {
             return response()->json(['message' => 'Pengajuan sudah diproses sebelumnya.'], 422);
         }
 
-        $penempatan->update([
-            'status_pengesahan' => 'ditolak',
+        $pengajuan->update([
+            'status' => 'ditolak',
             'catatan_penolakan' => $request->catatan_penolakan,
         ]);
-        $penempatan->siswa()->update(['status' => 'belum_magang']);
+
+        $pengajuan->siswa()->update(['status' => 'belum_magang']);
 
         $this->logActivity(
             'TOLAK_PENGAJUAN',
-            "Admin menolak pengajuan dari " . ($penempatan->siswa->profile->nama ?? '-') .
+            "Admin menolak pengajuan dari " . ($pengajuan->siswa->profile->nama ?? '-') .
             ". Alasan: {$request->catatan_penolakan}"
         );
 

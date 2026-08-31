@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Models\Siswa;
+use App\Models\ActivityLog;
 use App\Models\Guru;
 use App\Models\PenempatanMagang;
+use App\Models\Siswa;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -15,7 +16,6 @@ class AuthController extends Controller
      */
     public function showLoginForm()
     {
-        // Ambil data langsung dari database
         $jumlahSiswa = Siswa::count();
         $jumlahGuru = Guru::count();
         $jumlahPenempatanMagang = PenempatanMagang::count();
@@ -30,34 +30,47 @@ class AuthController extends Controller
     /**
      * Proses login (POST /login)
      */
-public function login(Request $request)
-{
-    $credentials = $request->validate([
-        'email' => ['required', 'email'],
-        'password' => ['required', 'min:6'],
-    ]);
+    public function login(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'min:6'],
+        ]);
 
-    if (Auth::attempt(
-        $credentials,
-        $request->boolean('remember')
-    )) {
+        if (Auth::attempt(
+            $credentials,
+            $request->boolean('remember')
+        )) {
+            $request->session()->regenerate();
 
-        $request->session()->regenerate();
+            $user = Auth::user();
 
-        return match (Auth::user()->role) {
-            'admin' => redirect()->route('admin.dashboard'),
-            'guru' => redirect()->route('guru.dashboard'),
-            'siswa' => redirect()->route('siswa.dashboard'),
-            default => redirect()->route('landing'),
-        };
+            // Catat activity log LOGIN_SUCCESS
+            ActivityLog::create([
+                'level'       => 'info',
+                'action_type' => 'LOGIN_SUCCESS',
+                'actor_email' => $user->email ?? null,
+                'actor_role'  => $user->role ?? null,
+                'ip_address'  => $request->ip(),
+                'metadata'    => [
+                    'description' => "User {$user->email} berhasil login sebagai " . strtoupper($user->role ?? 'user'),
+                ],
+            ]);
+
+            return match ($user->role) {
+                'admin' => redirect()->route('admin.dashboard'),
+                'guru' => redirect()->route('guru.dashboard'),
+                'siswa' => redirect()->route('siswa.dashboard'),
+                default => redirect()->route('landing'),
+            };
+        }
+
+        return back()
+            ->withErrors([
+                'email' => 'Email atau password salah.',
+            ])
+            ->onlyInput('email');
     }
-
-    return back()
-        ->withErrors([
-            'email' => 'Email atau password salah.',
-        ])
-        ->onlyInput('email');
-}
 
     /**
      * Tampilkan halaman lupa password
@@ -95,6 +108,22 @@ public function login(Request $request)
      */
     public function logout(Request $request)
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+
+            // Catat activity log LOGOUT sebelum sesi dihancurkan
+            ActivityLog::create([
+                'level'       => 'info',
+                'action_type' => 'LOGOUT',
+                'actor_email' => $user->email ?? null,
+                'actor_role'  => $user->role ?? null,
+                'ip_address'  => $request->ip(),
+                'metadata'    => [
+                    'description' => "User {$user->email} (" . strtoupper($user->role ?? 'user') . ") telah logout",
+                ],
+            ]);
+        }
+
         Auth::logout();
 
         // Hapus session lama
