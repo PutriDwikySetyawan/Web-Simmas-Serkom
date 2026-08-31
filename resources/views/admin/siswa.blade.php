@@ -5,6 +5,13 @@
 
 @push('styles')
 <style>
+    .admin-main .admin-content {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
     /* =========================================================
        STAT CARD RINGKAS
     ========================================================= */
@@ -54,7 +61,8 @@
         border: 1px solid var(--simmas-border);
         border-radius: 14px;
 
-        padding: 20px;
+        overflow: hidden;
+        padding: 0;
     }
 
     /* ---------------------------------------------------
@@ -67,7 +75,8 @@
         gap: 10px;
         flex-wrap: wrap;
 
-        margin-bottom: 16px;
+        margin: 0;
+        padding: 20px;
     }
 
     .siswa-toolbar__search {
@@ -139,8 +148,19 @@
 
     .siswa-table {
         width: 100%;
+        min-width: 960px;
+        display: table !important;
         border-collapse: collapse;
     }
+
+    .siswa-table-wrap {
+        width: calc(100% - 24px);
+        margin: 0 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .siswa-pagination { padding: 0 20px 20px; }
 
     .siswa-table th {
         text-align: left;
@@ -582,12 +602,14 @@
     ========================================================= */
 
     @media (max-width: 991px) {
+        .admin-main .admin-content { padding-left: 20px !important; padding-right: 20px !important; }
         .siswa-stats {
             grid-template-columns: 1fr 1fr;
         }
     }
 
     @media (max-width: 576px) {
+        .admin-main .admin-content { padding-left: 12px !important; padding-right: 12px !important; }
         .siswa-stats {
             grid-template-columns: 1fr;
         }
@@ -595,6 +617,8 @@
         .siswa-modal__field-row {
             grid-template-columns: 1fr;
         }
+
+        .siswa-table-wrap { width: calc(100% - 16px); margin: 0 8px; }
     }
 </style>
 @endpush
@@ -700,6 +724,7 @@
 
     @if ($siswaList->count() > 0)
 
+        <div class="siswa-table-wrap">
         <table class="siswa-table">
             <thead>
                 <tr>
@@ -822,8 +847,9 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
 
-        <div class="mt-3">
+        <div class="siswa-pagination mt-3">
             {{ $siswaList->links() }}
         </div>
 

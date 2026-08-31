@@ -85,8 +85,18 @@ class KunjunganController extends Controller
             'tempat_magang_id' => ['required', 'exists:tempat_magang,id'],
             'tanggal'          => ['required', 'date'],
             'catatan'          => ['required', 'string'],
+            'photo'            => ['nullable', 'image', 'max:2048'],
         ]);
 
+        if ($request->hasFile('photo')) {
+            if ($kunjungan->photo_url) {
+                Storage::disk('public')->delete($kunjungan->photo_url);
+            }
+
+            $validated['photo_url'] = $request->file('photo')->store('kunjungan', 'public');
+        }
+
+        unset($validated['photo']);
         $kunjungan->update($validated);
 
         return response()->json(['message' => 'Catatan kunjungan berhasil diperbarui.']);

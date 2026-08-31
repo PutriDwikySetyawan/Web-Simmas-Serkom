@@ -351,6 +351,38 @@
         font-size: 1.35rem;
     }
 
+    .kj-photo-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: .65rem;
+    }
+
+    .kj-photo-action {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .4rem;
+        border: 1px solid var(--guru-border);
+        border-radius: 9px;
+        color: var(--guru-primary);
+        background: #fff;
+        font-size: .82rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background var(--kj-transition), border-color var(--kj-transition);
+    }
+
+    .kj-photo-action:hover { background: var(--guru-primary-soft); border-color: var(--guru-primary); }
+
+    .kj-camera-preview {
+        width: 100%;
+        max-height: 58vh;
+        background: #111827;
+        border-radius: 12px;
+        object-fit: cover;
+    }
+
     .kj-upload-preview {
         width: 100%;
         display: none;
@@ -431,6 +463,7 @@
         .kj-header { margin-bottom: 1.25rem; }
         #btnBukaTambahKunjungan { width: 100%; justify-content: center; min-height: 42px; }
         .kj-stat-card { padding: 1rem; }
+        .kj-photo-actions { grid-template-columns: 1fr; }
     }
 </style>
 @endsection
@@ -594,15 +627,23 @@
                         <label class="form-label fw-semibold small">
                             Foto Dokumentasi Lapangan <span class="text-muted fw-normal">(Opsional)</span>
                         </label>
-                        <label for="kjFoto" class="kj-upload-box d-block mb-0" id="kjUploadBox">
+                        <div class="kj-upload-box mb-2" id="kjUploadBox">
                             <i class="bi bi-cloud-arrow-up"></i>
-                            <span id="kjUploadHint">Klik untuk upload foto bersama pembimbing industri</span>
+                            <span id="kjUploadHint">Pilih sumber foto dokumentasi</span>
                             <div class="kj-upload-preview" id="kjUploadPreview">
                                 <img id="kjUploadThumb" src="" alt="">
                                 <span class="kj-upload-filename" id="kjFotoNama"></span>
                             </div>
-                        </label>
-                        <input type="file" id="kjFoto" name="photo" accept="image/*" class="d-none">
+                        </div>
+                        <div class="kj-photo-actions">
+                            <label for="kjFotoUpload" class="kj-photo-action">
+                                <i class="bi bi-upload"></i> Upload Foto
+                            </label>
+                            <button type="button" class="kj-photo-action" id="btnBukaKamera">
+                                <i class="bi bi-camera-fill"></i> Buka Kamera
+                            </button>
+                        </div>
+                        <input type="file" id="kjFotoUpload" accept="image/*" class="d-none">
                     </div>
 
                     <div class="invalid-feedback d-block" id="kjFormError"></div>
@@ -613,6 +654,31 @@
                 <button type="button" class="btn btn-primary px-4" id="btnSimpanKunjungan">
                     <span class="btn-text">Simpan Kunjungan</span>
                     <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ============================================================ --}}
+{{-- MODAL: KAMERA UNTUK FOTO DOKUMENTASI --}}
+{{-- ============================================================ --}}
+<div class="modal fade" id="modalKameraKunjungan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold mb-0"><i class="bi bi-camera-fill text-primary me-2"></i>Ambil Foto Dokumentasi</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup kamera"></button>
+            </div>
+            <div class="modal-body">
+                <video id="kjKameraVideo" class="kj-camera-preview" autoplay playsinline muted></video>
+                <canvas id="kjKameraCanvas" class="d-none"></canvas>
+                <p class="small text-muted mb-0 mt-2" id="kjKameraInfo">Izinkan akses kamera untuk mengambil foto.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="btnAmbilFoto" disabled>
+                    <i class="bi bi-camera"></i> Ambil Foto
                 </button>
             </div>
         </div>
@@ -677,10 +743,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const kjUploadHint    = document.getElementById('kjUploadHint');
     const kjUploadPreview = document.getElementById('kjUploadPreview');
     const kjUploadThumb   = document.getElementById('kjUploadThumb');
+    const kjFotoUpload    = document.getElementById('kjFotoUpload');
+    const btnBukaKamera   = document.getElementById('btnBukaKamera');
+    const modalKamera     = document.getElementById('modalKameraKunjungan');
+    const kameraVideo     = document.getElementById('kjKameraVideo');
+    const kameraCanvas    = document.getElementById('kjKameraCanvas');
+    const btnAmbilFoto    = document.getElementById('btnAmbilFoto');
+    const kameraInfo      = document.getElementById('kjKameraInfo');
 
     let mode = 'tambah'; // 'tambah' | 'edit'
     let currentKunjunganId = null;
     let currentHapusId = null;
+    let fotoTerpilih = null;
+    let kameraStream = null;
 
     // ============================================================
     // Tombol "Tambah Kunjungan" (header)
@@ -731,27 +806,78 @@ window.lihatFotoKunjungan = lihatFotoKunjungan;
             document.getElementById('kjDudi').value = this.dataset.tempatMagangId;
             document.getElementById('kjTanggal').value = this.dataset.tanggal;
             document.getElementById('kjCatatan').value = this.dataset.catatan;
-            document.getElementById('kjFoto').value = '';
+            kjFotoUpload.value = '';
             resetUploadPreview();
             kjFormError.textContent = '';
 
-            // update() tidak menerima foto — sembunyikan input upload saat edit
-            kjUploadWrapper.style.display = 'none';
+            kjUploadWrapper.style.display = '';
         });
     });
 
-    // Preview foto yang dipilih (nama + thumbnail)
-    document.getElementById('kjFoto').addEventListener('change', function () {
-        const file = this.files[0];
+    // Foto dapat berasal dari galeri/penyimpanan perangkat atau kamera.
+    function pilihFoto(file) {
         if (!file) { resetUploadPreview(); return; }
 
+        fotoTerpilih = file;
         document.getElementById('kjFotoNama').textContent = file.name;
         kjUploadThumb.src = URL.createObjectURL(file);
         kjUploadHint.classList.add('d-none');
         kjUploadPreview.classList.add('show');
+    }
+
+    kjFotoUpload.addEventListener('change', function () { pilihFoto(this.files[0]); });
+
+    async function bukaKamera() {
+        if (!navigator.mediaDevices?.getUserMedia) {
+            showToast('Kamera tidak didukung browser ini. Gunakan tombol Upload Foto.', 'danger');
+            return;
+        }
+
+        kameraInfo.textContent = 'Meminta izin akses kamera...';
+        btnAmbilFoto.disabled = true;
+        bootstrap.Modal.getOrCreateInstance(modalKamera).show();
+
+        try {
+            kameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: { ideal: 'environment' } },
+                audio: false,
+            });
+            kameraVideo.srcObject = kameraStream;
+            await kameraVideo.play();
+            kameraInfo.textContent = 'Atur posisi foto, lalu tekan “Ambil Foto”.';
+            btnAmbilFoto.disabled = false;
+        } catch (error) {
+            kameraInfo.textContent = 'Kamera tidak dapat diakses. Pastikan izin kamera diberikan dan halaman dibuka melalui localhost atau HTTPS.';
+        }
+    }
+
+    function tutupKamera() {
+        kameraStream?.getTracks().forEach(track => track.stop());
+        kameraStream = null;
+        kameraVideo.srcObject = null;
+        btnAmbilFoto.disabled = true;
+    }
+
+    btnBukaKamera.addEventListener('click', bukaKamera);
+    modalKamera.addEventListener('hidden.bs.modal', tutupKamera);
+
+    btnAmbilFoto.addEventListener('click', function () {
+        const width = kameraVideo.videoWidth;
+        const height = kameraVideo.videoHeight;
+        if (!width || !height) return;
+
+        kameraCanvas.width = width;
+        kameraCanvas.height = height;
+        kameraCanvas.getContext('2d').drawImage(kameraVideo, 0, 0, width, height);
+        kameraCanvas.toBlob((blob) => {
+            if (!blob) return;
+            pilihFoto(new File([blob], `kunjungan-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+            bootstrap.Modal.getOrCreateInstance(modalKamera).hide();
+        }, 'image/jpeg', 0.88);
     });
 
     function resetUploadPreview() {
+        fotoTerpilih = null;
         document.getElementById('kjFotoNama').textContent = '';
         kjUploadThumb.src = '';
         kjUploadHint.classList.remove('d-none');
@@ -802,6 +928,7 @@ window.lihatFotoKunjungan = lihatFotoKunjungan;
     // ============================================================
     function simpanTambah() {
         const formData = new FormData(formKunjungan);
+        if (fotoTerpilih) formData.append('photo', fotoTerpilih);
 
         fetch(`{{ url('guru/kunjungan') }}`, {
             method: 'POST',
@@ -831,23 +958,20 @@ window.lihatFotoKunjungan = lihatFotoKunjungan;
     }
 
     // ============================================================
-    // Simpan Edit (PUT + JSON, karena update() tidak proses file)
+    // Simpan Edit (POST + FormData agar foto dokumentasi dapat diperbarui)
     // ============================================================
     function simpanEdit() {
-        const payload = {
-            tempat_magang_id: document.getElementById('kjDudi').value,
-            tanggal: document.getElementById('kjTanggal').value,
-            catatan: document.getElementById('kjCatatan').value,
-        };
+        const payload = new FormData(formKunjungan);
+        payload.append('_method', 'PUT');
+        if (fotoTerpilih) payload.append('photo', fotoTerpilih);
 
         fetch(`{{ url('guru/kunjungan') }}/${currentKunjunganId}`, {
-            method: 'PUT',
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
             },
-            body: JSON.stringify(payload),
+            body: payload,
         })
         .then(async (response) => {
             const data = await parseResponseSafely(response);

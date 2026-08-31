@@ -260,6 +260,38 @@
         border-collapse: collapse;
     }
 
+    .dash-dudi-panel {
+        padding: 20px 0 0;
+        overflow: hidden;
+    }
+
+    .dash-dudi-panel .dash-panel__title,
+    .dash-dudi-panel .dash-panel__subtitle {
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .dash-dudi-table-wrap {
+        width: calc(100% - 24px);
+        margin: 0 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dash-dudi-table-wrap .dash-table {
+        display: table !important;
+        width: 100% !important;
+        min-width: 560px;
+        table-layout: auto;
+    }
+
+    @media (max-width: 575.98px) {
+        .dash-dudi-panel { padding-top: 16px; }
+        .dash-dudi-panel .dash-panel__title,
+        .dash-dudi-panel .dash-panel__subtitle { margin-left: 16px; margin-right: 16px; }
+        .dash-dudi-table-wrap { width: calc(100% - 16px); margin: 0 8px; }
+    }
+
     .dash-table th {
         text-align: left;
 
@@ -719,10 +751,11 @@
      Ringkasan nama mitra, kuota, dan jumlah siswa aktif.
 ====================================================== --}}
 
-<div class="dash-panel">
+<div class="dash-panel dash-dudi-panel">
     <p class="dash-panel__title">Distribusi Mitra DUDI</p>
     <p class="dash-panel__subtitle">5 mitra dengan siswa magang aktif terbanyak</p>
 
+    <div class="dash-dudi-table-wrap">
     <table class="dash-table">
         <thead>
             <tr>
@@ -752,6 +785,7 @@
             @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 
 @endsection

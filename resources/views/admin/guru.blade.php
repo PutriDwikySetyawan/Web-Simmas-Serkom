@@ -5,6 +5,15 @@
 
 @push('styles')
 <style>
+    /* Selaraskan lebar halaman dengan Monitoring Global. */
+    .admin-main .admin-content {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
     /* =========================================================
        STAT CARD RINGKAS
     ========================================================= */
@@ -54,7 +63,8 @@
         border: 1px solid var(--simmas-border);
         border-radius: 14px;
 
-        padding: 20px;
+        overflow: hidden;
+        padding: 0;
     }
 
     /* ---------------------------------------------------
@@ -66,7 +76,8 @@
         align-items: center;
         gap: 10px;
 
-        margin-bottom: 16px;
+        margin: 0;
+        padding: 20px;
     }
 
     .guru-toolbar__search {
@@ -137,8 +148,19 @@
 
     .guru-table {
         width: 100%;
+        min-width: 760px;
+        display: table !important;
         border-collapse: collapse;
     }
+
+    .guru-table-wrap {
+        width: calc(100% - 24px);
+        margin: 0 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .guru-pagination { padding: 0 20px 20px; }
 
     .guru-table th {
         text-align: left;
@@ -552,12 +574,14 @@
     ========================================================= */
 
     @media (max-width: 991px) {
+        .admin-main .admin-content { padding-left: 20px !important; padding-right: 20px !important; }
         .guru-stats {
             grid-template-columns: 1fr 1fr;
         }
     }
 
     @media (max-width: 576px) {
+        .admin-main .admin-content { padding-left: 12px !important; padding-right: 12px !important; }
         .guru-stats {
             grid-template-columns: 1fr;
         }
@@ -565,6 +589,8 @@
         .guru-toolbar {
             flex-wrap: wrap;
         }
+
+        .guru-table-wrap { width: calc(100% - 16px); margin: 0 8px; }
     }
 </style>
 @endpush
@@ -663,6 +689,7 @@
 
     @if ($guruList->count() > 0)
 
+        <div class="guru-table-wrap">
         <table class="guru-table">
             <thead>
                 <tr>
@@ -747,8 +774,9 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
 
-        <div class="mt-3">
+        <div class="guru-pagination mt-3">
             {{ $guruList->links() }}
         </div>
 
