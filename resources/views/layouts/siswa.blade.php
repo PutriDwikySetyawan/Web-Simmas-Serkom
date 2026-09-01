@@ -1,30 +1,37 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    {{-- ===== 1. META DASAR & JUDUL HALAMAN ===== --}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{-- CSRF Token untuk request AJAX di modul siswa --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Judul halaman dinamis dengan fallback 'Dashboard - SIMMAS Peserta Magang' --}}
     <title>@yield('title', 'Dashboard') &mdash; SIMMAS Peserta Magang</title>
 
+    {{-- ===== 2. GOOGLE FONTS & CSS ASSET ===== --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
     <style>
+        /* ==========================================================
+           TOKEN WARNA & VARIABEL TEMA DASHBOARD SISWA
+        ========================================================== */
         :root {
-            --guru-primary:       #3B5BFB;
-            --guru-primary-dark:  #2540D6;
-            --guru-primary-soft:  #EAEEFF;
-            --guru-ink:           #111827;
-            --guru-muted:         #6B7280;
-            --guru-border:        #E5E7EB;
-            --guru-danger:        #DC3545;
+            --guru-primary:       #3B5BFB;    /* Warna biru utama siswa */
+            --guru-primary-dark:  #2540D6;    /* Warna biru gelap saat hover */
+            --guru-primary-soft:  #EAEEFF;    /* Background biru lembut */
+            --guru-ink:           #111827;    /* Warna teks utama */
+            --guru-muted:         #6B7280;    /* Warna teks redup/keterangan */
+            --guru-border:        #E5E7EB;    /* Warna garis pembatas */
+            --guru-danger:        #DC3545;    /* Warna merah peringatan */
             --guru-danger-soft:   #FDEAEA;
-            --guru-bg:            #F5F6FA;
+            --guru-bg:            #F5F6FA;    /* Background halaman */
 
-            --app-sidebar-w: 248px;
-            --app-topbar-h: 68px;
+            --app-sidebar-w: 248px;           /* Lebar sidebar siswa */
+            --app-topbar-h: 68px;             /* Tinggi topbar */
             --app-transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -555,7 +562,7 @@
                         <i class="bi bi-send-check-fill"></i> Pengajuan Magang
                     </a>
                 </div>
-
+                
                 <div class="app-nav-group">
                     <div class="app-nav-group-title">Kegiatan Magang</div>
                     <a href="{{ url('siswa/absensi-harian') }}"

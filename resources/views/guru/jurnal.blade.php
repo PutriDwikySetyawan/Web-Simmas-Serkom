@@ -1,11 +1,18 @@
-{{-- resources/views/guru/jurnal.blade.php --}}
+{{-- Menggunakan template layout utama Guru Pembimbing --}}
 @extends('layouts.guru')
 
+{{-- Mengatur judul halaman pada tab browser --}}
 @section('title', 'Validasi Jurnal & Absensi')
+
+{{-- Mengatur judul halaman pada header topbar --}}
 @section('page-title', 'Validasi Jurnal & Absensi')
 
 @section('styles')
 <style>
+    /* =========================================================
+       1. STYLING KARTU STATISTIK VALIDASI
+       Menampilkan counter: Menunggu Validasi, Disetujui, Ditolak
+    ========================================================= */
     .vj-subtitle {
         color: var(--guru-muted);
         font-size: 0.88rem;

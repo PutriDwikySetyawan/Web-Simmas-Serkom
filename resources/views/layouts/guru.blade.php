@@ -3,14 +3,16 @@
 
 <head>
     {{-- ============================================================
-         1. META & JUDUL HALAMAN
+         1. META DASAR & JUDUL HALAMAN
     ============================================================ --}}
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    {{-- CSRF Token untuk request AJAX di modul guru --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Judul tab browser dinamis --}}
     <title>
         @yield('title', 'Dashboard') - SIMMAS Guru Pembimbing
     </title>
@@ -19,9 +21,10 @@
     {{-- ============================================================
          2. ASSET CSS & JAVASCRIPT
     ============================================================ --}}
+    {{-- Bundler Vite untuk CSS dan JS aplikasi --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Bootstrap Icons --}}
+    {{-- Bootstrap Icons untuk ikon navigasi & antarmuka --}}
     <link
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
@@ -34,13 +37,13 @@
     <style>
 
         /* ==========================================================
-           TOKEN WARNA
+           TOKEN WARNA & VARIABEL TEMA GURU
         ========================================================== */
 
         :root {
-            --guru-primary: #2f5cf0;
-            --guru-primary-dark: #2447c4;
-            --guru-primary-soft: #eef2ff;
+            --guru-primary: #2f5cf0;          /* Warna biru utama guru */
+            --guru-primary-dark: #2447c4;     /* Warna hover gelap */
+            --guru-primary-soft: #eef2ff;     /* Latar belakang biru lembut */
 
             --guru-danger: #ee4148;
             --guru-danger-soft: #fdecec;

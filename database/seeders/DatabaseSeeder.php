@@ -167,5 +167,13 @@ class DatabaseSeeder extends Seeder
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // ========================================================
+        // 7. DATA JURUSAN & KELAS
+        // ========================================================
+        $this->call([
+            JurusanSeeder::class,
+            KelasSeeder::class,
+        ]);
     }
 }

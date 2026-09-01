@@ -1,50 +1,48 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
+    {{-- ===== 1. META DASAR & JUDUL HALAMAN ===== --}}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    {{-- Judul halaman dinamis dengan fallback 'Admin - SIMMAS' --}}
     <title>@yield('title', 'Admin') - SIMMAS</title>
 
-    {{-- CSRF token, dipakai semua request AJAX (fetch/axios) di halaman admin --}}
+    {{-- CSRF token untuk autentikasi keamanan semua request AJAX (Fetch/Axios) di modul admin --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    {{-- Bootstrap CSS, dibutuhkan oleh SEMUA halaman admin yang memakai
-         class Bootstrap standar (card, row/col, table, modal, badge, btn,
-         form-control, dsb). Sebelumnya cuma Bootstrap Icons + JS bundle
-         yang ke-load, jadi semua komponen tampil polos tanpa styling. --}}
+    {{-- ===== 2. CSS FRAMEWORK & ICON ===== --}}
+    {{-- Bootstrap 5.3 CSS untuk layouting (grid, card, table, modal, badge, button, form) --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 
-    {{-- Bootstrap Icons, dipakai untuk semua ikon sidebar & tombol aksi --}}
+    {{-- Bootstrap Icons untuk visual ikon sidebar, tombol aksi, dan status --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
-    {{-- CSS custom aplikasi (warna brand, komponen shared) --}}
+    {{-- CSS kustom aplikasi --}}
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
-    {{-- Slot untuk CSS tambahan khusus per halaman (mis. style tabel monitoring) --}}
+    {{-- Slot CSS tambahan khusus untuk view turunan --}}
     @stack('styles')
 
     <style>
         /* =========================================================
-           VARIABEL WARNA BRAND SIMMAS
-           Dipusatkan di sini supaya konsisten di seluruh halaman
-           admin, guru, dan siswa.
+           VARIABEL WARNA & TEMA BRAND SIMMAS (ADMIN)
+           Digunakan agar konsisten di seluruh modul dashboard admin.
         ========================================================= */
         :root {
-            --simmas-blue: #2563eb;
-            --simmas-blue-dark: #1d4ed8;
-            --simmas-blue-light: rgba(37, 99, 235, 0.12);
-            --simmas-ink: #0f172a;
-            --simmas-muted: #64748b;
-            --simmas-border: #e2e8f0;
-            --simmas-bg: #f8fafc;
-            --simmas-danger: #dc2626;
+            --simmas-blue: #2563eb;          /* Warna biru utama */
+            --simmas-blue-dark: #1d4ed8;     /* Warna biru gelap saat hover */
+            --simmas-blue-light: rgba(37, 99, 235, 0.12); /* Background biru muda */
+            --simmas-ink: #0f172a;           /* Warna teks utama */
+            --simmas-muted: #64748b;         /* Warna teks redup/keterangan */
+            --simmas-border: #e2e8f0;        /* Warna garis pembatas */
+            --simmas-bg: #f8fafc;            /* Warna latar belakang halaman */
+            --simmas-danger: #dc2626;        /* Warna merah bahaya/hapus */
             --simmas-danger-light: rgba(220, 38, 38, 0.08);
             --font-display: 'Inter', system-ui, sans-serif;
 
-            /* ===== dipakai di halaman-halaman modul admin
-               (kartu statistik, badge status) yang belum ada tokennya di sini ===== */
-            --simmas-paper: var(--simmas-bg);                    /* alias, background lembut */
+            /* Token warna status badge & statistik */
+            --simmas-paper: var(--simmas-bg);
             --simmas-green: #16A34A;
             --simmas-green-light: #E8F8EE;
             --simmas-amber: #B45309;
@@ -595,6 +593,18 @@
                    class="admin-sidebar__link {{ request()->routeIs('admin.siswa.*') ? 'is-active' : '' }}">
                     <i class="bi bi-people-fill"></i>
                     Data Siswa
+                </a>
+
+                <a href="{{ route('admin.kelas.index') }}"
+                   class="admin-sidebar__link {{ request()->routeIs('admin.kelas.*') ? 'is-active' : '' }}">
+                    <i class="bi bi-easel2-fill"></i>
+                    Data Kelas
+                </a>
+
+                <a href="{{ route('admin.jurusan.index') }}"
+                   class="admin-sidebar__link {{ request()->routeIs('admin.jurusan.*') ? 'is-active' : '' }}">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    Data Jurusan
                 </a>
 
                 <a href="{{ route('admin.dudi.index') }}"

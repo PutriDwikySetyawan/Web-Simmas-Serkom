@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+// Import Model yang digunakan dalam autentikasi dan log
 use App\Models\ActivityLog;
 use App\Models\Guru;
 use App\Models\PenempatanMagang;
@@ -13,13 +14,16 @@ class AuthController extends Controller
 {
     /**
      * Tampilkan form login (GET /login)
+     * Mengambil data statistik singkat untuk ditampilkan di halaman login
      */
     public function showLoginForm()
     {
+        // Menghitung total siswa, guru, dan penempatan magang
         $jumlahSiswa = Siswa::count();
         $jumlahGuru = Guru::count();
         $jumlahPenempatanMagang = PenempatanMagang::count() + \App\Models\PengajuanMagang::count();
 
+        // Mengirimkan variabel ke view auth/login.blade.php
         return view('auth.login', compact(
             'jumlahSiswa',
             'jumlahGuru',
@@ -28,24 +32,28 @@ class AuthController extends Controller
     }
 
     /**
-     * Proses login (POST /login)
+     * Proses autentikasi login pengguna (POST /login)
      */
     public function login(Request $request)
     {
+        // Validasi input email dan password
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'min:6'],
         ]);
 
+        // Mencoba login dengan kredensial yang dimasukkan
         if (Auth::attempt(
             $credentials,
-            $request->boolean('remember')
+            $request->boolean('remember') // Opsi ingat saya
         )) {
+            // Mencegah Session Fixation Attack dengan meregenerasi session ID
             $request->session()->regenerate();
 
+            // Mengambil objek user yang berhasil login
             $user = Auth::user();
 
-            // Catat activity log LOGIN_SUCCESS
+            // Mencatat log aktivitas keberhasilan login ke database
             ActivityLog::create([
                 'level'       => 'info',
                 'action_type' => 'LOGIN_SUCCESS',
@@ -57,6 +65,7 @@ class AuthController extends Controller
                 ],
             ]);
 
+            // Mengarahkan (redirect) user ke dashboard sesuai role masing-masing
             return match ($user->role) {
                 'admin' => redirect()->route('admin.dashboard'),
                 'guru' => redirect()->route('guru.dashboard'),
@@ -65,15 +74,16 @@ class AuthController extends Controller
             };
         }
 
+        // Jika email atau password tidak cocok, kembalikan ke form login dengan pesan error
         return back()
             ->withErrors([
                 'email' => 'Email atau password salah.',
             ])
-            ->onlyInput('email');
+            ->onlyInput('email'); // Mempertahankan isi input email sebelumnya
     }
 
     /**
-     * Tampilkan halaman lupa password
+     * Tampilkan halaman lupa password (GET /forgot-password)
      */
     public function showForgotPasswordForm()
     {
@@ -81,10 +91,11 @@ class AuthController extends Controller
     }
 
     /**
-     * Proses pengiriman permintaan reset password
+     * Proses pengiriman permintaan reset password (POST /forgot-password)
      */
     public function sendResetLink(Request $request)
     {
+        // Validasi email dengan custom message Bahasa Indonesia
         $request->validate([
             'email' => ['required', 'email'],
         ], [
@@ -92,6 +103,7 @@ class AuthController extends Controller
             'email.email'    => 'Format alamat email tidak valid.',
         ]);
 
+        // Memeriksa apakah email terdaftar di tabel profiles
         $profile = \App\Models\Profile::where('email', $request->email)->first();
 
         if (!$profile) {
@@ -100,18 +112,20 @@ class AuthController extends Controller
             ])->withInput();
         }
 
+        // Memberikan respon notifikasi sukses
         return back()->with('status', 'Permintaan pemulihan telah dikirim. Silakan hubungi Administrator sekolah jika Anda memerlukan bantuan lebih lanjut.');
     }
 
     /**
-     * Logout
+     * Proses Logout Pengguna (POST /logout)
      */
     public function logout(Request $request)
     {
+        // Memeriksa apakah user sedang dalam kondisi login
         if (Auth::check()) {
             $user = Auth::user();
 
-            // Catat activity log LOGOUT sebelum sesi dihancurkan
+            // Mencatat log aktivitas logout ke database
             ActivityLog::create([
                 'level'       => 'info',
                 'action_type' => 'LOGOUT',
@@ -124,14 +138,16 @@ class AuthController extends Controller
             ]);
         }
 
+        // Menghapus status autentikasi user
         Auth::logout();
 
-        // Hapus session lama
+        // Menghancurkan session lama pengguna
         $request->session()->invalidate();
 
-        // Generate CSRF token baru
+        // Menghasilkan token CSRF baru untuk keamanan
         $request->session()->regenerateToken();
 
+        // Mengarahkan kembali ke landing page
         return redirect()->route('landing');
     }
 }

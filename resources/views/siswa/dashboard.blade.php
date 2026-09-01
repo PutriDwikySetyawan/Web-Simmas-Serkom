@@ -1,10 +1,16 @@
-
+{{-- Menggunakan template layout utama Siswa Magang --}}
 @extends('layouts.siswa')
 
+{{-- Mengatur judul halaman pada tab browser --}}
 @section('title', 'Dashboard')
+
+{{-- Mengatur judul halaman pada header topbar --}}
 @section('page-title', 'Dashboard')
 
 @php
+    // ============================================================
+    // 1. DATA BINDING DARI DASHBOARD CONTROLLER SISWA
+    // ============================================================
     $namaSiswa            = $namaSiswa ?? 'Siswa Magang';
     $namaPerusahaan       = $namaPerusahaan ?? '-';
     $alamatSingkat        = $alamatSingkat ?? null;
@@ -21,24 +27,16 @@
     $sudahAbsenHariIni    = $sudahAbsenHariIni ?? false;
     $magangAktif          = $magangAktif ?? false;
 
+    // Pemetaan label teks dan class badge status magang
     $statusMap = [
         'disahkan'       => ['label' => 'Sedang Magang', 'class' => 'sw-badge-green'],
         'lulus_magang'   => ['label' => 'Magang Selesai', 'class' => 'sw-badge-green'],
         'menunggu'       => ['label' => 'Menunggu Validasi', 'class' => 'sw-badge-orange'],
         'belum_disahkan' => ['label' => 'Belum Disahkan', 'class' => 'sw-badge-orange'],
-        'ditolak'   => ['label' => 'Ditolak', 'class' => 'sw-badge-red'],
+        'ditolak'        => ['label' => 'Ditolak', 'class' => 'sw-badge-red'],
         'belum_mengajukan' => ['label' => 'Belum Mengajukan', 'class' => 'sw-badge-orange'],
     ];
     $statusBadge = $statusMap[$statusPengajuan] ?? $statusMap['belum_mengajukan'];
-@endphp
-
-@section('styles')
-<style>
-    :root {
-        --sw-primary:      var(--guru-primary, #3B5BFB);
-        --sw-primary-soft: var(--guru-primary-soft, #EAEEFF);
-        --sw-ink:          var(--guru-ink, #111827);
-        --sw-muted:        var(--guru-muted, #6B7280);
         --sw-border:       var(--guru-border, #E5E7EB);
         --sw-radius-sm: 10px;
         --sw-radius-md: 14px;

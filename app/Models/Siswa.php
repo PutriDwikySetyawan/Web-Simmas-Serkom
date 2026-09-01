@@ -36,4 +36,10 @@ class Siswa extends Model
     {
         return $this->hasMany(JurnalHarian::class, 'siswa_id');
     }
+
+    public function kelasDetail()
+    {
+        return $this->belongsTo(Kelas::class, 'kelas', 'nama_kelas');
+    }
 }
+

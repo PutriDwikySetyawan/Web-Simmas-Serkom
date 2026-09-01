@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
+// Import Model untuk absensi, log aktivitas, dan upload storage
 use App\Models\Absensi;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
@@ -11,10 +12,11 @@ use Illuminate\Support\Facades\Storage;
 class AbsensiController extends Controller
 {
     /**
-     * Kegiatan Magang: Absensi Harian (/siswa/absensi)
+     * READ: Menampilkan Halaman Riwayat & Presensi Harian Siswa (/siswa/absensi)
      */
     public function index(Request $request)
     {
+        // Mengambil data relasi profil siswa yang sedang login
         $siswa = auth()->user()->siswa;
 
         if (!$siswa) {
@@ -22,21 +24,21 @@ class AbsensiController extends Controller
         }
 
         // ============================================
-        // Status kehadiran hari ini (Clock In/Out)
+        // Status Kehadiran Hari Ini (Clock In / Clock Out)
         // ============================================
         $absensiHariIni = Absensi::where('siswa_id', $siswa->id)
             ->whereDate('tanggal', today())
             ->first();
 
         // ============================================
-        // Filter bulan (default bulan berjalan)
+        // Filter Berdasarkan Bulan (Default: Bulan & Tahun Berjalan)
         // ============================================
         $bulanDipilih = $request->input('bulan', now()->format('Y-m'));
         $tahun = (int) substr($bulanDipilih, 0, 4);
         $bulan = (int) substr($bulanDipilih, 5, 2);
 
         // ============================================
-        // Riwayat absensi bulan ini
+        // Mengambil Riwayat Absensi Sesuai Bulan yang Dipilih
         // ============================================
         $riwayatAbsensi = Absensi::where('siswa_id', $siswa->id)
             ->whereYear('tanggal', $tahun)
@@ -45,13 +47,14 @@ class AbsensiController extends Controller
             ->get();
 
         // ============================================
-        // Rekap Statistik Bulan Ini
+        // Rekap Statistik Kehadiran Bulanan
         // ============================================
         $totalHadir = $riwayatAbsensi->where('status', 'hadir')->count();
         $totalSakit = $riwayatAbsensi->where('status', 'sakit')->count();
         $totalIzin  = $riwayatAbsensi->where('status', 'izin')->count();
         $totalAlfa  = $riwayatAbsensi->where('status', 'alfa')->count();
 
+        // Mengirimkan variabel ke view siswa/absensi.blade.php
         return view('siswa.absensi', compact(
             'siswa',
             'absensiHariIni',
@@ -65,10 +68,12 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Modal Presensi: simpan absensi harian (Clock In / Clock Out) dengan foto bukti
+     * CREATE / UPDATE: Menyimpan presensi harian (Clock In / Clock Out / Izin / Sakit)
+     * Dilengkapi fitur upload foto bukti presensi ke storage publik
      */
     public function store(Request $request)
     {
+        // Validasi input presensi
         $validated = $request->validate([
             'tipe'    => ['nullable', 'in:masuk,pulang'],
             'status'  => ['required', 'in:hadir,sakit,izin,alfa'],
@@ -94,12 +99,13 @@ class AbsensiController extends Controller
 
         $tipe = $validated['tipe'] ?? 'masuk';
 
-        // Cek record absensi untuk tanggal ini
+        // Mencari atau membuat record absensi baru untuk tanggal ini
         $absensi = Absensi::firstOrNew([
             'siswa_id' => $siswa->id,
             'tanggal'  => $validated['tanggal'],
         ]);
 
+        // Upload foto selfie/bukti kehadiran jika diunggah
         $photoUrl = null;
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('absensi', 'public');
@@ -108,7 +114,7 @@ class AbsensiController extends Controller
 
         if ($tipe === 'pulang') {
             // ============================================
-            // Clock Out (Absen Pulang)
+            // PROSES CLOCK OUT (ABSEN PULANG)
             // ============================================
             if (!$absensi->exists) {
                 $absensi->status = $validated['status'];
@@ -124,7 +130,7 @@ class AbsensiController extends Controller
             $actionType = 'ABSENSI_PULANG';
         } else {
             // ============================================
-            // Clock In (Absen Masuk) / Izin / Sakit
+            // PROSES CLOCK IN (ABSEN MASUK) / IZIN / SAKIT
             // ============================================
             $absensi->status = $validated['status'];
             $absensi->jam_masuk = $validated['jam'];
@@ -132,7 +138,7 @@ class AbsensiController extends Controller
                 $absensi->photo_masuk_url = $photoUrl;
             }
 
-            // Sakit/Izin butuh validasi guru, Hadir otomatis disetujui
+            // Status 'hadir' otomatis disetujui, status 'sakit'/'izin' perlu validasi guru pembimbing
             $absensi->status_validasi = ($validated['status'] === 'hadir') ? 'disetujui' : 'pending';
 
             $pesan = ($validated['status'] === 'hadir')
@@ -141,9 +147,10 @@ class AbsensiController extends Controller
             $actionType = 'ABSENSI_MASUK';
         }
 
+        // Simpan data absensi ke database
         $absensi->save();
 
-        // Catat activity log
+        // Mencatat log aktivitas absensi ke tabel activity_logs
         ActivityLog::create([
             'level'       => 'info',
             'action_type' => $actionType,
@@ -158,6 +165,7 @@ class AbsensiController extends Controller
             ],
         ]);
 
+        // Mengembalikan respon JSON untuk Fetch/AJAX
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
